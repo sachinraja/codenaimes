@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Board } from './board';
-import { generateRandomBoard } from '@/lib/board';
+import { type GameState, generateRandomBoard, getGameState } from '@/lib/board';
 import type { GameWord } from '@/lib/word';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,8 @@ function Game() {
   const [word, setWord] = useState('');
   const [clueLength, setClueLength] = useState(1);
   const [currentTeam, setCurrentTeam] = useState<'red' | 'blue'>('red');
-  const [guessedWords, setGuessedWords] = useState<string[]>([]);
-  const [lastGuessedWordIndex, setLastGuessedWordIndex] = useState(0);
+  const [highlightedWords, setHighlightedWords] = useState<number[]>([]);
+  const [gameState, setGameState] = useState<GameState>('playing');
 
   useEffect(() => {
     setBoard(generateRandomBoard());
@@ -36,19 +36,28 @@ function Game() {
       length: clueLength,
     });
 
-    setGuessedWords(words);
-
     setBoard((board) => {
       const newBoard = [...board];
 
+      const guessedWords: number[] = [];
       let i = 0;
       for (; i < words.length; i++) {
         const index = board.findIndex((w) => w.word === words[i]);
-        if (index !== -1) newBoard[index].revealed = true;
-        if (newBoard[index].type !== currentTeam) break;
+        if (index === -1) continue;
+
+        board[index].revealed = true;
+        guessedWords.push(index);
+
+        const gameState = getGameState(board, currentTeam);
+        if (gameState !== 'playing') {
+          setGameState(gameState);
+          break;
+        }
+        if (board[index].type !== currentTeam) break;
       }
 
-      setLastGuessedWordIndex(i);
+      setHighlightedWords(guessedWords);
+
       return newBoard;
     });
 
@@ -59,7 +68,7 @@ function Game() {
   return (
     <div className="space-y-4 max-w-2xl mx-auto p-4">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
+        {gameState === 'playing' ? (
           <div
             className={cn({
               'text-red-500': currentTeam === 'red',
@@ -69,7 +78,17 @@ function Game() {
           >
             {currentTeam}'s turn
           </div>
-        </div>
+        ) : (
+          <div
+            className={cn({
+              'text-red-500': gameState === 'red won',
+              'text-blue-500': gameState === 'blue won',
+              'font-semibold': true,
+            })}
+          >
+            {gameState}
+          </div>
+        )}
       </div>
       <form onSubmit={handleWordSubmit} className="flex gap-2">
         <Input
@@ -77,6 +96,7 @@ function Game() {
           value={word}
           onChange={(e) => setWord(e.target.value)}
           placeholder="Enter a clue..."
+          disabled={gameState !== 'playing'}
         />
         <Input
           type="number"
@@ -85,27 +105,18 @@ function Game() {
           min={1}
           max={9}
           className="w-20"
+          disabled={gameState !== 'playing'}
         />
-        <Button type="submit">Submit</Button>
+        <Button disabled={gameState !== 'playing'} type="submit">
+          Submit
+        </Button>
       </form>
-      <div className="grid grid-cols-5 gap-2">
-        {guessedWords.map((word, i) => (
-          <div
-            key={word}
-            className={cn(
-              'flex text-white p-2 rounded-md items-center justify-center',
-              {
-                'bg-green-500': i < lastGuessedWordIndex,
-                'bg-red-500': i === lastGuessedWordIndex,
-                'bg-gray-600': i > lastGuessedWordIndex,
-              },
-            )}
-          >
-            {word}
-          </div>
-        ))}
-      </div>
-      <Board board={board} setBoard={setBoard} />
+
+      <Board
+        board={board}
+        setBoard={setBoard}
+        highlightedWords={highlightedWords}
+      />
     </div>
   );
 }

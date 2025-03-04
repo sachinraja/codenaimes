@@ -46,3 +46,23 @@ function shuffle<T>(array: T[]) {
 
   return newArray;
 }
+
+export type GameState = 'playing' | 'red won' | 'blue won';
+
+export function getGameState(
+  board: GameWord[],
+  lastGuessedTeam: 'red' | 'blue',
+): GameState {
+  const otherTeam = lastGuessedTeam === 'red' ? 'blue' : 'red';
+
+  const assassinWord = board.find((word) => word.type === 'assassin');
+  if (!assassinWord) return `${otherTeam} won`;
+
+  const redWords = board.filter((word) => word.type === 'red');
+  const blueWords = board.filter((word) => word.type === 'blue');
+
+  if (redWords.every((word) => word.revealed)) return 'red won';
+  if (blueWords.every((word) => word.revealed)) return 'blue won';
+
+  return 'playing';
+}
