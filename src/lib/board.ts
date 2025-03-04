@@ -56,7 +56,7 @@ export function getGameState(
   const otherTeam = lastGuessedTeam === 'red' ? 'blue' : 'red';
 
   const assassinWord = board.find((word) => word.type === 'assassin');
-  if (!assassinWord) return `${otherTeam} won`;
+  if (assassinWord?.revealed) return `${otherTeam} won`;
 
   const redWords = board.filter((word) => word.type === 'red');
   const blueWords = board.filter((word) => word.type === 'blue');

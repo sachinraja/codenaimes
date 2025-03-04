@@ -49,6 +49,7 @@ function Game() {
         guessedWords.push(index);
 
         const gameState = getGameState(board, currentTeam);
+
         if (gameState !== 'playing') {
           setGameState(gameState);
           break;
