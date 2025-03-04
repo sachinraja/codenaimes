@@ -1,4 +1,4 @@
-# codenames-ai
+# codenAImes
 Codenames where you give the clues and an LLM guesses.
 
 # ideas
