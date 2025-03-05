@@ -16,6 +16,7 @@ import {
 import { generateClue } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { applySelectionDiff, type StateDiff } from '@/lib/diff';
+import { readStreamableValue } from 'ai/rsc';
 
 const loadingBoard: GameWord[] = Array.from({ length: 25 }, () => ({
   word: '',
@@ -40,31 +41,29 @@ function Game() {
     setBoard(generateRandomBoard());
   }, []);
 
-  const animateGuessedWords = async (guessedWords: number[]) => {
-    for (let i = 0; i < guessedWords.length; i++) {
-      setClientBoard((clientBoard) => {
-        const newClientBoard = [...clientBoard];
-        newClientBoard[guessedWords[i]] = {
-          ...newClientBoard[guessedWords[i]],
-          visibleState: 'selecting',
-        };
-        return newClientBoard;
-      });
+  const animateGuessedWord = async (guessedWord: number) => {
+    setClientBoard((clientBoard) => {
+      const newClientBoard = [...clientBoard];
+      newClientBoard[guessedWord] = {
+        ...newClientBoard[guessedWord],
+        visibleState: 'selecting',
+      };
+      return newClientBoard;
+    });
 
-      await new Promise<void>((resolve) =>
-        setTimeout(() => {
-          setClientBoard((clientBoard) => {
-            const newClientBoard = [...clientBoard];
-            newClientBoard[guessedWords[i]] = {
-              ...newClientBoard[guessedWords[i]],
-              visibleState: 'revealed',
-            };
-            return newClientBoard;
-          });
-          resolve();
-        }, 750),
-      );
-    }
+    await new Promise<void>((resolve) =>
+      setTimeout(() => {
+        setClientBoard((clientBoard) => {
+          const newClientBoard = [...clientBoard];
+          newClientBoard[guessedWord] = {
+            ...newClientBoard[guessedWord],
+            visibleState: 'revealed',
+          };
+          return newClientBoard;
+        });
+        resolve();
+      }, 750),
+    );
   };
 
   const handleWordSubmit = async (e: React.FormEvent) => {
@@ -76,14 +75,14 @@ function Game() {
       count: clueCount,
     });
 
-    const guessedWords: number[] = [];
     let stateDiff: StateDiff | undefined = undefined;
 
     const newBoard = [...board];
-    for (const diff of diffs) {
+    for await (const diff of readStreamableValue(diffs)) {
+      if (!diff) continue;
       if (diff.type === 'selection') {
         applySelectionDiff(newBoard, diff);
-        guessedWords.push(diff.index);
+        await animateGuessedWord(diff.index);
       } else if (diff.type === 'state') {
         stateDiff = diff;
       }
@@ -94,7 +93,6 @@ function Game() {
     setCurrentTeam(currentTeam === 'red' ? 'blue' : 'red');
 
     setIsSelecting(true);
-    await animateGuessedWords(guessedWords);
     if (stateDiff) setGameState(stateDiff.newState);
     setIsSelecting(false);
   };
