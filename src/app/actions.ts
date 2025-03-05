@@ -6,10 +6,11 @@ import type { Clue, GameWord } from '@/lib/word';
 import { z } from 'zod';
 import { getGameState } from '@/lib/board';
 import type { Diff } from '@/lib/diff';
+import type { Team, GameState } from '@/lib/types';
 
 export async function generateClue(
   board: GameWord[],
-  currentTeam: 'red' | 'blue',
+  currentTeam: Team,
   clue: Clue,
 ) {
   const wordList = board
@@ -52,7 +53,7 @@ export async function generateClue(
     });
 
     const gameState = getGameState(board, currentTeam);
-    if (gameState !== 'playing') {
+    if (gameState.state !== 'playing') {
       diffs.push({
         type: 'state',
         newState: gameState,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Board } from './board';
-import { type GameState, generateRandomBoard, getGameState } from '@/lib/board';
+import { generateRandomBoard } from '@/lib/board';
 import type { ClientWord, GameWord } from '@/lib/word';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import {
 import { generateClue } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { applySelectionDiff, type StateDiff } from '@/lib/diff';
+import type { GameState, Team } from '@/lib/types';
 
 const loadingBoard: GameWord[] = Array.from({ length: 25 }, () => ({
   word: '',
@@ -32,9 +33,12 @@ function Game() {
   const [clientBoard, setClientBoard] = useState<ClientWord[]>(baseClientBoard);
   const [word, setWord] = useState('');
   const [clueCount, setClueCount] = useState(1);
-  const [currentTeam, setCurrentTeam] = useState<'red' | 'blue'>('red');
   const [isSelecting, setIsSelecting] = useState(false);
-  const [gameState, setGameState] = useState<GameState>('playing');
+  const [currentTeam, setCurrentTeam] = useState<Team>('red');
+  const [gameState, setGameState] = useState<GameState>({
+    state: 'playing',
+    currentTeam: 'red',
+  });
 
   useEffect(() => {
     setBoard(generateRandomBoard());
@@ -91,7 +95,12 @@ function Game() {
 
     setBoard(newBoard);
     setWord('');
-    setCurrentTeam(currentTeam === 'red' ? 'blue' : 'red');
+    const nextTeam = currentTeam === 'red' ? 'blue' : 'red';
+    setGameState({
+      state: 'playing',
+      currentTeam: nextTeam,
+    });
+    setCurrentTeam(nextTeam);
 
     setIsSelecting(true);
     await animateGuessedWords(guessedWords);
@@ -102,7 +111,7 @@ function Game() {
   return (
     <div className="space-y-4 max-w-2xl mx-auto p-4">
       <div className="flex justify-between items-center">
-        {gameState === 'playing' || isSelecting ? (
+        {gameState.state === 'playing' || isSelecting ? (
           <div
             className={cn({
               'text-red-500': currentTeam === 'red',
@@ -115,12 +124,12 @@ function Game() {
         ) : (
           <div
             className={cn({
-              'text-red-500': gameState === 'red won',
-              'text-blue-500': gameState === 'blue won',
+              'text-red-500': gameState.winner === 'red',
+              'text-blue-500': gameState.winner === 'blue',
               'font-semibold text-lg': true,
             })}
           >
-            {gameState}
+            {gameState.winner} won
           </div>
         )}
       </div>
@@ -130,14 +139,14 @@ function Game() {
           value={word}
           onChange={(e) => setWord(e.target.value)}
           placeholder="Enter a clue..."
-          disabled={gameState !== 'playing'}
+          disabled={gameState.state !== 'playing'}
           className="flex-1"
         />
         <div className="flex gap-2">
           <Select
             value={clueCount.toString()}
             onValueChange={(value) => setClueCount(Number(value))}
-            disabled={gameState !== 'playing'}
+            disabled={gameState.state !== 'playing'}
           >
             <SelectTrigger className="w-24">
               <SelectValue />
@@ -151,7 +160,7 @@ function Game() {
             </SelectContent>
           </Select>
           <Button
-            disabled={gameState !== 'playing' || isSelecting}
+            disabled={gameState.state !== 'playing' || isSelecting}
             type="submit"
           >
             Submit

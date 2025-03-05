@@ -1,4 +1,4 @@
-import type { GameState } from './board';
+import type { GameState } from './types';
 import type { GameWord } from './word';
 
 export interface BaseDiff {

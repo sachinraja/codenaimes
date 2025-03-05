@@ -1,6 +1,8 @@
+import type { Team } from './types';
+
 export type GameWord = {
   word: string;
-  type: 'red' | 'blue' | 'neutral' | 'assassin';
+  type: Team | 'neutral' | 'assassin';
 } & (
   | {
       revealed: true;
@@ -29,3 +31,7 @@ export const typeToColor: Record<
   neutral: { hidden: 'bg-neutral-500', revealed: 'bg-neutral-500/40' },
   assassin: { hidden: 'bg-purple-500', revealed: 'bg-purple-500/40' },
 };
+
+export function getOtherTeam(team: Team) {
+  return team === 'red' ? 'blue' : 'red';
+}
