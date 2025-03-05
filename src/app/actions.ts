@@ -32,7 +32,10 @@ export async function generateClue(
   let i = 0;
   for (; i < words.length; i++) {
     const index = board.findIndex((w) => w.word === words[i].word);
-    if (index === -1) continue;
+    if (index === -1) {
+      console.error('Word not found in board', words[i].word);
+      continue;
+    }
 
     board[index] = {
       ...board[index],
