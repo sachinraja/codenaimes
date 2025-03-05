@@ -4,10 +4,15 @@ export interface GameWord {
   revealed: boolean;
 }
 
+export interface ClientWord {
+  visibleState: 'hidden' | 'revealed' | 'selecting';
+}
+
 export interface Clue {
   word: string;
-  length: number;
+  count: number;
 }
+
 export const typeToColor: Record<
   GameWord['type'],
   { hidden: string; revealed: string }

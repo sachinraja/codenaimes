@@ -4,20 +4,50 @@ import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import type { Clue, GameWord } from '@/lib/word';
 import { z } from 'zod';
+import { getGameState } from '@/lib/board';
+import type { Diff } from '@/lib/diff';
 
-export async function generateClue(board: GameWord[], clue: Clue) {
+export async function generateClue(
+  board: GameWord[],
+  currentTeam: 'red' | 'blue',
+  clue: Clue,
+) {
   const wordList = board
     .filter(({ revealed }) => !revealed)
     .map(({ word }) => word)
     .join('\n');
 
-  const { object } = await generateObject({
+  const { object: words } = await generateObject({
     model: google('gemini-1.5-flash'),
-    schema: z.object({
-      words: z.array(z.string()).length(clue.length),
-    }),
-    prompt: `Pick ${clue.length} words that most closely relate to the clue from the the following list of words and rank them in order of relevance:\nClue: ${clue.word}\nList:\n${wordList}`,
+    schema: z.string().array().length(clue.count),
+    prompt: `Pick ${clue.count} words that most closely relate to the clue from the the following list of words and rank them in order of relevance:\nClue: ${clue.word}\nList:\n${wordList}`,
   });
 
-  return object;
+  const diffs: Diff[] = [];
+  let i = 0;
+  for (; i < words.length; i++) {
+    const index = board.findIndex((w) => w.word === words[i]);
+    if (index === -1) continue;
+
+    board[index] = {
+      ...board[index],
+      revealed: true,
+    };
+    diffs.push({
+      type: 'selection',
+      index,
+    });
+
+    const gameState = getGameState(board, currentTeam);
+    if (gameState !== 'playing') {
+      diffs.push({
+        type: 'state',
+        newState: gameState,
+      });
+      break;
+    }
+    if (board[index].type !== currentTeam) break;
+  }
+
+  return diffs;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Board } from './board';
 import { type GameState, generateRandomBoard, getGameState } from '@/lib/board';
-import type { GameWord } from '@/lib/word';
+import type { ClientWord, GameWord } from '@/lib/word';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { generateClue } from '@/app/actions';
 import { cn } from '@/lib/utils';
+import { applySelectionDiff, type StateDiff } from '@/lib/diff';
 
 const loadingBoard: GameWord[] = Array.from({ length: 25 }, () => ({
   word: '',
@@ -22,13 +23,16 @@ const loadingBoard: GameWord[] = Array.from({ length: 25 }, () => ({
   revealed: false,
 }));
 
+const baseClientBoard: ClientWord[] = Array.from({ length: 25 }, () => ({
+  visibleState: 'hidden',
+}));
+
 function Game() {
   const [board, setBoard] = useState(loadingBoard);
+  const [clientBoard, setClientBoard] = useState<ClientWord[]>(baseClientBoard);
   const [word, setWord] = useState('');
-  const [clueLength, setClueLength] = useState(1);
+  const [clueCount, setClueCount] = useState(1);
   const [currentTeam, setCurrentTeam] = useState<'red' | 'blue'>('red');
-  const [selectedWords, setSelectedWords] = useState<number[]>([]);
-  const [guessingWords, setGuessingWords] = useState<number[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [gameState, setGameState] = useState<GameState>('playing');
 
@@ -37,55 +41,64 @@ function Game() {
   }, []);
 
   const animateGuessedWords = async (guessedWords: number[]) => {
-    setGuessingWords(guessedWords);
     setIsSelecting(true);
 
     for (let i = 0; i < guessedWords.length; i++) {
-      setSelectedWords((prev) => [...prev, guessedWords[i]]);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      setClientBoard((clientBoard) => {
+        const newClientBoard = [...clientBoard];
+        newClientBoard[guessedWords[i]] = {
+          ...newClientBoard[guessedWords[i]],
+          visibleState: 'selecting',
+        };
+        return newClientBoard;
+      });
+
+      await new Promise<void>((resolve) =>
+        setTimeout(() => {
+          setClientBoard((clientBoard) => {
+            const newClientBoard = [...clientBoard];
+            newClientBoard[guessedWords[i]] = {
+              ...newClientBoard[guessedWords[i]],
+              visibleState: 'revealed',
+            };
+            return newClientBoard;
+          });
+          resolve();
+        }, 750),
+      );
     }
 
-    setSelectedWords([]);
     setIsSelecting(false);
-    setGuessingWords([]);
   };
 
   const handleWordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!word.trim()) return;
 
-    const { words } = await generateClue(board, {
+    const diffs = await generateClue(board, currentTeam, {
       word,
-      length: clueLength,
+      count: clueCount,
     });
 
     const guessedWords: number[] = [];
+    let stateDiff: StateDiff | undefined = undefined;
 
-    setBoard((board) => {
-      const newBoard = [...board];
-      let i = 0;
-      for (; i < words.length; i++) {
-        const index = board.findIndex((w) => w.word === words[i]);
-        if (index === -1) continue;
-
-        board[index].revealed = true;
-        guessedWords.push(index);
-
-        const gameState = getGameState(board, currentTeam);
-
-        if (gameState !== 'playing') {
-          setGameState(gameState);
-          break;
-        }
-        if (board[index].type !== currentTeam) break;
+    const newBoard = [...board];
+    for (const diff of diffs) {
+      if (diff.type === 'selection') {
+        applySelectionDiff(newBoard, diff);
+        guessedWords.push(diff.index);
+      } else if (diff.type === 'state') {
+        stateDiff = diff;
       }
-      return newBoard;
-    });
+    }
 
+    setBoard(newBoard);
     setWord('');
     setCurrentTeam(currentTeam === 'red' ? 'blue' : 'red');
 
     await animateGuessedWords(guessedWords);
+    if (stateDiff) setGameState(stateDiff.newState);
   };
 
   return (
@@ -124,8 +137,8 @@ function Game() {
         />
         <div className="flex gap-2">
           <Select
-            value={clueLength.toString()}
-            onValueChange={(value) => setClueLength(Number(value))}
+            value={clueCount.toString()}
+            onValueChange={(value) => setClueCount(Number(value))}
             disabled={gameState !== 'playing'}
           >
             <SelectTrigger className="w-24">
@@ -148,12 +161,7 @@ function Game() {
         </div>
       </form>
 
-      <Board
-        board={board}
-        setBoard={setBoard}
-        selectedWords={selectedWords}
-        guessingWords={guessingWords}
-      />
+      <Board board={board} clientBoard={clientBoard} />
     </div>
   );
 }
