@@ -8,6 +8,7 @@ export interface BaseDiff {
 export interface SelectionDiff extends BaseDiff {
   type: 'selection';
   index: number;
+  reason: string;
 }
 
 export interface StateDiff extends BaseDiff {
@@ -21,5 +22,6 @@ export function applySelectionDiff(board: GameWord[], diff: SelectionDiff) {
   board[diff.index] = {
     ...board[diff.index],
     revealed: true,
+    reason: diff.reason,
   };
 }

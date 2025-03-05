@@ -1,8 +1,15 @@
-export interface GameWord {
+export type GameWord = {
   word: string;
   type: 'red' | 'blue' | 'neutral' | 'assassin';
-  revealed: boolean;
-}
+} & (
+  | {
+      revealed: true;
+      reason: string;
+    }
+  | {
+      revealed: false;
+    }
+);
 
 export interface ClientWord {
   visibleState: 'hidden' | 'revealed' | 'selecting';

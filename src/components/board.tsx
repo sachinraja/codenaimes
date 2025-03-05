@@ -15,7 +15,7 @@ export function Board({ board, clientBoard }: BoardProps) {
             // biome-ignore lint/suspicious/noArrayIndexKey: position of each card does not change
             key={i}
             gameWord={gameWord}
-            visibleState={clientBoard[i].visibleState}
+            clientWord={clientBoard[i]}
           />
         );
       })}

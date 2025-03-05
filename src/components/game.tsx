@@ -41,8 +41,6 @@ function Game() {
   }, []);
 
   const animateGuessedWords = async (guessedWords: number[]) => {
-    setIsSelecting(true);
-
     for (let i = 0; i < guessedWords.length; i++) {
       setClientBoard((clientBoard) => {
         const newClientBoard = [...clientBoard];
@@ -67,8 +65,6 @@ function Game() {
         }, 750),
       );
     }
-
-    setIsSelecting(false);
   };
 
   const handleWordSubmit = async (e: React.FormEvent) => {
@@ -97,8 +93,10 @@ function Game() {
     setWord('');
     setCurrentTeam(currentTeam === 'red' ? 'blue' : 'red');
 
+    setIsSelecting(true);
     await animateGuessedWords(guessedWords);
     if (stateDiff) setGameState(stateDiff.newState);
+    setIsSelecting(false);
   };
 
   return (
