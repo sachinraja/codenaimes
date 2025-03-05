@@ -25,7 +25,9 @@ export async function generateClue(
       })
       .array()
       .length(clue.count),
-    prompt: `Pick ${clue.count} words that most closely relate to the clue from the the following list of words and rank them in order of relevance. Provide a reason explaining your logic for each word:\nClue: ${clue.word}\nList:\n${wordList.join('\n')}`,
+    prompt: `Pick ${clue.count} word${clue.count === 1 ? '' : 's'} that most closely relate${clue.count === 1 ? 's' : ''} to the clue from the the following list of words and rank them in order of relevance. Provide a short reason explaining your logic ${
+      clue.count === 1 ? 'for the word' : 'for each word'
+    }:\nClue: ${clue.word}\nList:\n${wordList.join('\n')}`,
   });
 
   const diffs: Diff[] = [];
