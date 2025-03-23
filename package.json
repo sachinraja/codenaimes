@@ -1,7 +1,14 @@
 {
   "name": "root",
   "private": true,
+  "scripts": {
+    "dev": "pnpm run -r --parallel --filter \"@apps/*\" dev",
+    "format": "biome format --write"
+  },
   "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "sharp"]
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp", "workerd"]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4"
   }
 }

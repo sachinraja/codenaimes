@@ -2,6 +2,6 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
   "files.associations": {
-		"wrangler.json": "jsonc"
-	}
+    "wrangler.json": "jsonc"
+  }
 }

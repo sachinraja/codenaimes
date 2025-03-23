@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", "dist", ".next", "src/components/ui"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      ".next",
+      ".wrangler",
+      "web/src/components/ui",
+      "worker-configuration.d.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

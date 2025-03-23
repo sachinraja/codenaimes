@@ -1,0 +1,6 @@
+{
+  "name": "@codenaimes/game",
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

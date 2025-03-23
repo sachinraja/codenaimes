@@ -1,0 +1,19 @@
+{
+  "name": "@apps/room",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@codenaimes/game": "workspace:*",
+    "@codenaimes/ws-interface": "workspace:*",
+    "cookie": "^1.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "wrangler": "^4.4.0"
+  }
+}
