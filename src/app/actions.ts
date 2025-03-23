@@ -6,7 +6,7 @@ import type { Clue, GameWord } from '@/lib/word';
 import { z } from 'zod';
 import { getGameState } from '@/lib/board';
 import type { Diff } from '@/lib/diff';
-import type { Team, GameState } from '@/lib/types';
+import type { Team } from '@/lib/types';
 
 export async function generateClue(
   board: GameWord[],
