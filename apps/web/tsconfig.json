@@ -28,7 +28,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "../../packages/game/board.ts",
-    "../../packages/game/diff.ts",
+    "../../packages/ws-interface/diff.ts",
     "../../packages/game/types.ts",
     "../../packages/game/word.ts"
   ],

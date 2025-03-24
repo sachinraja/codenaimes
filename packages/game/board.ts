@@ -47,37 +47,3 @@ function shuffle<T>(array: T[]) {
 
   return newArray;
 }
-
-export function getGameState(
-  board: GameWord[],
-  lastGuessedTeam: Team,
-): GameState {
-  const otherTeam = getOtherTeam(lastGuessedTeam);
-
-  const assassinWord = board.find((word) => word.type === 'assassin');
-  if (assassinWord?.revealed)
-    return {
-      stage: 'complete',
-      winner: otherTeam,
-    };
-
-  const redWords = board.filter((word) => word.type === 'red');
-  const blueWords = board.filter((word) => word.type === 'blue');
-
-  if (redWords.every((word) => word.revealed))
-    return {
-      stage: 'complete',
-      winner: 'red',
-    };
-
-  if (blueWords.every((word) => word.revealed))
-    return {
-      stage: 'complete',
-      winner: 'blue',
-    };
-
-  return {
-    stage: 'playing',
-    currentTeam: lastGuessedTeam,
-  };
-}

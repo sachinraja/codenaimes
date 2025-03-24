@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
-import type { GameState } from '@codenaimes/game/types';
-import { Lobby, type LobbyProps } from './lobby';
+import type { UserState, GameState } from '@codenaimes/game/types';
+import { Lobby } from './lobby';
 import Game from './game';
 import { LoadingScreen } from './loading';
+import type { Diff } from '@codenaimes/ws-interface/diff';
 
 interface GameControllerProps {
   roomId: string;
@@ -15,47 +16,34 @@ interface GameControllerProps {
 export function GameController({ roomId }: GameControllerProps) {
   const socketURL = `ws://localhost:8787/room/${roomId}`;
   const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketURL);
-  const [isLoading, setLoading] = useState(true);
-  const [gameState, setGameState] = useState<GameState>({ stage: 'lobby' });
-  const [teamStateMap, setTeamStateMap] = useState<LobbyProps['teamStateMap']>({
-    red: 'waiting',
-    blue: 'waiting',
+  const [isLoading, setIsLoading] = useState(true);
+  const [gameState, setGameState] = useState<GameState>({
+    stage: 'lobby',
+    teamStateMap: {
+      red: 'waiting',
+      blue: 'waiting',
+    },
   });
+  const [userState, setUserState] = useState<UserState>({
+    id: '',
+    team: 'red',
+  });
+  const [diffs, setDiffs] = useState<Diff[]>([]);
 
   useEffect(() => {
     const message = lastJsonMessage as ClientMessage;
     if (!message) return;
     switch (message.type) {
-      case 'player-join': {
-        setTeamStateMap((teamStateMap) => ({
-          ...teamStateMap,
-          [message.team]: 'ready',
-        }));
+      case 'sync': {
+        setGameState(message.gameState);
+        setUserState(message.userState);
+        setIsLoading(false);
         break;
       }
-      case 'sync': {
-        switch (message.state.stage) {
-          case 'lobby': {
-            setTeamStateMap(message.state.teamStateMap);
-            break;
-          }
-          case 'playing': {
-            setGameState({
-              stage: 'playing',
-              currentTeam: message.state.currentTeam,
-            });
-            break;
-          }
-          case 'complete': {
-            setGameState({
-              stage: 'complete',
-              winner: message.state.winner,
-            });
-            break;
-          }
-        }
-
-        setLoading(false);
+      case 'diff': {
+        const stateDiff = message.diffs.find((diff) => diff.type === 'state');
+        if (stateDiff) setGameState(stateDiff.state);
+        setDiffs(message.diffs);
         break;
       }
     }
@@ -77,11 +65,21 @@ export function GameController({ roomId }: GameControllerProps) {
                 const message: ServerMessage = { type: 'start-game' };
                 sendJsonMessage(message);
               }}
-              teamStateMap={teamStateMap}
+              gameState={gameState}
             />
           )}
-          {gameState.stage === 'playing' && <Game />}
-          {gameState.stage === 'complete' && <Game />}
+          {(gameState.stage === 'playing' ||
+            gameState.stage === 'complete') && (
+            <Game
+              userState={userState}
+              gameState={gameState}
+              submitClue={(clue) => {
+                const message: ServerMessage = { type: 'clue', clue };
+                sendJsonMessage(message);
+              }}
+              diffs={diffs}
+            />
+          )}
         </>
       )}
     </>

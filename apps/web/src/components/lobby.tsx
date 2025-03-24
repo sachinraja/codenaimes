@@ -2,13 +2,13 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
-import type { Team } from '@codenaimes/game/types';
+import type { LobbyGameState, Team } from '@codenaimes/game/types';
 import { CheckIcon, ClockIcon } from 'lucide-react';
 
 type TeamState = 'waiting' | 'ready';
 
 export interface LobbyProps {
-  teamStateMap: Record<Team, TeamState>;
+  gameState: LobbyGameState;
   startGame: () => void;
 }
 
@@ -27,7 +27,7 @@ function TeamCard({ team, state }: { team: Team; state: TeamState }) {
   );
 }
 
-export function Lobby({ teamStateMap, startGame }: LobbyProps) {
+export function Lobby({ gameState, startGame }: LobbyProps) {
   return (
     <div className="flex flex-col items-center justify-center m-8">
       <h1 className="text-lg font-bold mb-4">lobby</h1>
@@ -43,7 +43,7 @@ export function Lobby({ teamStateMap, startGame }: LobbyProps) {
         </Button>
         <Button
           className="cursor-pointer"
-          disabled={Object.values(teamStateMap).some(
+          disabled={Object.values(gameState.teamStateMap).some(
             (state) => state === 'waiting',
           )}
           onClick={startGame}
@@ -54,7 +54,7 @@ export function Lobby({ teamStateMap, startGame }: LobbyProps) {
 
       <div className="w-1/2">
         <div className="flex flex-row justify-center items-center">
-          {Object.entries(teamStateMap).map(([team, state]) => (
+          {Object.entries(gameState.teamStateMap).map(([team, state]) => (
             <TeamCard key={team} team={team as Team} state={state} />
           ))}
         </div>

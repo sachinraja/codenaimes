@@ -1,20 +1,27 @@
 export type Team = 'red' | 'blue';
 
-export type GameState =
-  | {
-      stage: 'lobby';
-      teamStateMap: Record<Team, 'waiting' | 'ready'>;
-    }
-  | {
-      stage: 'playing';
-      board: Board;
-      currentTeam: Team;
-    }
-  | {
-      stage: 'complete';
-      board: Board;
-      winner: Team;
-    };
+interface BaseGameState {
+  stage: string;
+}
+
+export interface LobbyGameState extends BaseGameState {
+  stage: 'lobby';
+  teamStateMap: Record<Team, 'waiting' | 'ready'>;
+}
+
+export interface PlayingGameState extends BaseGameState {
+  stage: 'playing';
+  board: GameWord[];
+  currentTeam: Team;
+}
+
+export interface CompleteGameState extends BaseGameState {
+  stage: 'complete';
+  board: GameWord[];
+  winner: Team;
+}
+
+export type GameState = LobbyGameState | PlayingGameState | CompleteGameState;
 
 export type GameStage = GameState['stage'];
 
@@ -36,4 +43,9 @@ export type Board = GameWord[];
 export interface Clue {
   word: string;
   count: number;
+}
+
+export interface UserState {
+  id: string;
+  team: Team;
 }

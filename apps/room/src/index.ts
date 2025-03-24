@@ -1,14 +1,10 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { Board, GameStage, GameState, Team } from '@codenaimes/game/types';
+import type { GameState, Team, UserState } from '@codenaimes/game/types';
 import { parse, serialize } from 'cookie';
 import { generateRandomBoard } from '@codenaimes/game/board';
 import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
 import { generateRoomId } from './room';
-
-interface UserState {
-  id: string;
-  team: Team;
-}
+import { generateGuesses } from './guess';
 
 interface WSAttachment {
   sessionId: string;
@@ -72,13 +68,15 @@ export class RoomDurableObject extends DurableObject<Env> {
         serialize('sessionId', sessionId, { httpOnly: true }),
       );
 
-      const message: ClientMessage = {
-        type: 'player-join',
-        team: user.team,
-      };
-      const messageString = JSON.stringify(message);
-      for (const clientWS of this.ctx.getWebSockets())
-        clientWS.send(messageString);
+      this.sendToAllClients({
+        type: 'diff',
+        diffs: [
+          {
+            type: 'state',
+            state: this.state,
+          },
+        ],
+      });
     }
 
     this.ctx.acceptWebSocket(server);
@@ -109,26 +107,57 @@ export class RoomDurableObject extends DurableObject<Env> {
         };
         await this.ctx.storage.put('state', this.state);
 
-        const message: ClientMessage = {
-          type: 'sync',
-          state: this.state,
-        };
-        const messageString = JSON.stringify(message);
-        for (const clientWS of this.ctx.getWebSockets()) {
-          clientWS.send(messageString);
-        }
+        this.sendToAllClients({
+          type: 'diff',
+          diffs: [
+            {
+              type: 'state',
+              state: this.state,
+            },
+          ],
+        });
         break;
       }
       case 'sync': {
-        const message: ClientMessage = {
+        this.sendToClient(ws, {
           type: 'sync',
-          state: this.state,
-        };
-        const messageString = JSON.stringify(message);
-        ws.send(messageString);
-        return;
+          gameState: this.state,
+          userState: user,
+        });
+        break;
+      }
+      case 'clue': {
+        if (
+          this.state.stage !== 'playing' ||
+          user.team !== this.state.currentTeam
+        )
+          return;
+
+        const { diffs, newState } = await generateGuesses(
+          this.state,
+          data.clue,
+        );
+        this.state = newState;
+        await this.ctx.storage.put('state', this.state);
+
+        this.sendToAllClients({
+          type: 'diff',
+          diffs: diffs,
+        });
+        break;
       }
     }
+  }
+
+  sendToClient(ws: WebSocket, message: ClientMessage) {
+    const messageString = JSON.stringify(message);
+    ws.send(messageString);
+  }
+
+  sendToAllClients(message: ClientMessage) {
+    const messageString = JSON.stringify(message);
+    for (const clientWS of this.ctx.getWebSockets())
+      clientWS.send(messageString);
   }
 }
 

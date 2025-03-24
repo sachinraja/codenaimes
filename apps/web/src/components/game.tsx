@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Board } from './board';
-import { generateRandomBoard } from '@codenaimes/game/board';
 import type { ClientWord } from '@/lib/word';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,43 +12,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { generateClue } from '@/app/actions';
 import { cn } from '@/lib/utils';
-import { applySelectionDiff, type StateDiff } from '@codenaimes/game/diff';
 import type {
-  Board as BoardType,
-  GameState,
+  Clue,
+  CompleteGameState,
+  PlayingGameState,
   Team,
+  UserState,
 } from '@codenaimes/game/types';
+import type { Diff, StateDiff } from '@codenaimes/ws-interface/diff';
 
-const loadingBoard: BoardType = Array.from({ length: 25 }, () => ({
-  word: '',
-  type: 'neutral',
-  revealed: false,
-}));
+type GameProps = {
+  userState: UserState;
+  gameState: PlayingGameState | CompleteGameState;
+  submitClue: (clue: Clue) => void;
+  diffs: Diff[];
+};
 
-const baseClientBoard: ClientWord[] = Array.from({ length: 25 }, () => ({
-  visibleState: 'hidden',
-}));
-
-type GameProps = {};
-
-function Game(props: GameProps) {
-  const [board, setBoard] = useState(loadingBoard);
-  const [clientBoard, setClientBoard] = useState<ClientWord[]>(baseClientBoard);
+function Game({ userState, gameState, submitClue, diffs }: GameProps) {
+  const [clientBoard, setClientBoard] = useState<ClientWord[]>(
+    gameState.board.map((word) => ({
+      visibleState: word.revealed ? 'revealed' : 'hidden',
+    })),
+  );
   const [word, setWord] = useState('');
   const [clueCount, setClueCount] = useState(1);
   const [isSelecting, setIsSelecting] = useState(false);
-  const [currentTeam, setCurrentTeam] = useState<Team>('red');
-  const [gameState, setGameState] = useState<GameState>({
-    stage: 'playing',
-    board: [],
-    currentTeam: 'red',
-  });
+  const [currentTeam, setCurrentTeam] = useState<Team>(
+    gameState.stage === 'playing' ? gameState.currentTeam : 'red',
+  );
 
   useEffect(() => {
-    setBoard(generateRandomBoard());
-  }, []);
+    const guessedWords: number[] = [];
+
+    let stateDiff: StateDiff | undefined;
+    for (const diff of diffs) {
+      if (diff.type === 'selection') guessedWords.push(diff.index);
+      if (diff.type === 'state') stateDiff = diff;
+    }
+
+    setWord('');
+
+    console.log(stateDiff);
+
+    (async () => {
+      setIsSelecting(true);
+      await animateGuessedWords(guessedWords);
+      setIsSelecting(false);
+
+      if (stateDiff?.state.stage === 'playing')
+        setCurrentTeam(stateDiff.state.currentTeam);
+    })();
+  }, [diffs]);
 
   const animateGuessedWords = async (guessedWords: number[]) => {
     for (let i = 0; i < guessedWords.length; i++) {
@@ -82,52 +96,23 @@ function Game(props: GameProps) {
     e.preventDefault();
     if (!word.trim()) return;
 
-    const diffs = await generateClue(board, currentTeam, {
-      word,
-      count: clueCount,
-    });
-
-    const guessedWords: number[] = [];
-    let stateDiff: StateDiff | undefined = undefined;
-
-    const newBoard = [...board];
-    for (const diff of diffs) {
-      if (diff.type === 'selection') {
-        applySelectionDiff(newBoard, diff);
-        guessedWords.push(diff.index);
-      } else if (diff.type === 'state') {
-        stateDiff = diff;
-      }
-    }
-
-    setBoard(newBoard);
-    setWord('');
-    const nextTeam = currentTeam === 'red' ? 'blue' : 'red';
-    setGameState({
-      stage: 'playing',
-      board: [],
-      currentTeam: nextTeam,
-    });
-    setCurrentTeam(nextTeam);
-
-    setIsSelecting(true);
-    await animateGuessedWords(guessedWords);
-    if (stateDiff) setGameState(stateDiff.newState);
-    setIsSelecting(false);
+    submitClue({ word, count: clueCount });
   };
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto p-4">
       <div className="flex justify-between items-center">
         {gameState.stage === 'playing' || isSelecting ? (
-          <div
-            className={cn({
-              'text-red-500': currentTeam === 'red',
-              'text-blue-500': currentTeam === 'blue',
-              'font-semibold text-lg': true,
-            })}
-          >
-            {currentTeam}'s turn
+          <div className="font-semibold text-lg">
+            <span
+              className={cn({
+                'text-red-500': currentTeam === 'red',
+                'text-blue-500': currentTeam === 'blue',
+              })}
+            >
+              {currentTeam}'s turn
+            </span>{' '}
+            <span>{currentTeam === userState.team && '(you)'}</span>
           </div>
         ) : (
           <div
@@ -168,7 +153,11 @@ function Game(props: GameProps) {
             </SelectContent>
           </Select>
           <Button
-            disabled={gameState.stage !== 'playing' || isSelecting}
+            disabled={
+              gameState.stage !== 'playing' ||
+              currentTeam !== userState.team ||
+              isSelecting
+            }
             type="submit"
           >
             Submit
@@ -176,7 +165,7 @@ function Game(props: GameProps) {
         </div>
       </form>
 
-      <Board board={board} clientBoard={clientBoard} />
+      <Board board={gameState.board} clientBoard={clientBoard} />
     </div>
   );
 }
