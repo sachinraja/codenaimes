@@ -22,11 +22,12 @@ import type {
 } from '@codenaimes/game/types';
 import type { Diff, StateDiff } from '@codenaimes/ws-interface/diff';
 import { TeamDisplay } from './team-display';
+import { type ModelId, models } from '@codenaimes/game/model';
 
 type GameProps = {
   userState: UserState;
   gameState: PlayingGameState | CompleteGameState;
-  submitClue: (clue: Clue) => void;
+  submitClue: (clue: Clue, modelId: ModelId) => void;
   diffs: Diff[];
 };
 
@@ -45,6 +46,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
   const [clues, setClues] = useState<PlayingGameState['clues']>(
     gameState.clues,
   );
+  const [modelId, setModelId] = useState<ModelId>('gemini-flash-1.5');
 
   useEffect(() => {
     const guessedWords: number[] = [];
@@ -103,7 +105,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
     e.preventDefault();
     if (!word.trim()) return;
 
-    submitClue({ word, count: clueCount });
+    submitClue({ word, count: clueCount }, modelId);
   };
 
   return (
@@ -140,6 +142,26 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
               {gameState.winner} won
             </div>
           )}
+          <Select
+            value={modelId}
+            onValueChange={(modelId) => setModelId(modelId as ModelId)}
+            disabled={gameState.stage !== 'playing'}
+          >
+            <SelectTrigger className="cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {models.map((model) => (
+                <SelectItem
+                  className="cursor-pointer"
+                  key={model.id}
+                  value={model.id}
+                >
+                  {model.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <form onSubmit={handleWordSubmit} className="flex gap-2">
           <Input
@@ -156,7 +178,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
               onValueChange={(value) => setClueCount(Number(value))}
               disabled={gameState.stage !== 'playing'}
             >
-              <SelectTrigger className="w-24 cursor-pointer">
+              <SelectTrigger className="w-16 cursor-pointer">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

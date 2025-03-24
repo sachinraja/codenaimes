@@ -1,5 +1,6 @@
-import { generateObject } from 'ai';
+import { generateObject, type LanguageModelV1 } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import type {
   Board,
@@ -10,29 +11,46 @@ import type {
 import type { Diff } from '@codenaimes/ws-interface/diff';
 import { getOtherTeam } from '@codenaimes/game/utils';
 import { env } from 'cloudflare:workers';
+import type { ModelId } from '@codenaimes/game/model';
 
-export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
+const modelIdToModelMap: Record<ModelId, () => LanguageModelV1> = {
+  'gemini-flash-1.5': () => {
+    return createGoogleGenerativeAI({
+      apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
+    })('gemini-1.5-flash');
+  },
+  'gpt-4o-mini': () => {
+    return createOpenAI({
+      apiKey: env.OPENAI_API_KEY,
+    })('gpt-4o-mini');
+  },
+};
+export async function generateGuesses(
+  gameState: PlayingGameState,
+  clue: Clue,
+  modelId: ModelId,
+) {
   const wordList = gameState.board
     .filter(({ revealed }) => !revealed)
     .map(({ word }) => word);
 
-  const google = createGoogleGenerativeAI({
-    apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
-  });
-
-  const { object: words } = await generateObject({
-    model: google('gemini-1.5-flash'),
-    schema: z
-      .object({
-        word: z.enum(wordList as [string, ...string[]]),
-        reason: z.string(),
-      })
-      .array()
-      .length(clue.count),
+  const { object } = await generateObject({
+    model: modelIdToModelMap[modelId](),
+    maxRetries: 0,
+    schema: z.object({
+      words: z
+        .object({
+          word: z.enum(wordList as [string, ...string[]]),
+          reason: z.string(),
+        })
+        .array()
+        .length(clue.count),
+    }),
     prompt: `Pick ${clue.count} word${clue.count === 1 ? '' : 's'} that most closely relate${clue.count === 1 ? 's' : ''} to the clue from the the following list of words and rank them in order of relevance. Provide a short reason explaining your logic ${
       clue.count === 1 ? 'for the word' : 'for each word'
     }:\nClue: ${clue.word}\nList:\n${wordList.join('\n')}`,
   });
+  const words = object.words;
 
   const diffs: Diff[] = [
     {

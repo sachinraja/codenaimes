@@ -24,7 +24,9 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           secrets: |
             GOOGLE_GENERATIVE_AI_API_KEY
+            OPENAI_API_KEY
           workingDirectory: apps/game-object
           packageManager: pnpm
         env:
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

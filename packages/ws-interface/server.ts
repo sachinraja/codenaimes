@@ -1,3 +1,4 @@
+import type { ModelId } from '@codenaimes/game/model';
 import type { BaseMessage } from './base';
 import type { Clue } from '@codenaimes/game/types';
 
@@ -7,6 +8,7 @@ interface StartGameMessage extends BaseMessage {
 
 interface ClueMessage extends BaseMessage {
   type: 'clue';
+  modelId: ModelId;
   clue: Clue;
 }
 

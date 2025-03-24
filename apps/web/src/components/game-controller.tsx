@@ -87,8 +87,8 @@ export function GameController({ roomId }: GameControllerProps) {
             <Game
               userState={userState}
               gameState={gameState}
-              submitClue={(clue) => {
-                const message: ServerMessage = { type: 'clue', clue };
+              submitClue={(clue, modelId) => {
+                const message: ServerMessage = { type: 'clue', clue, modelId };
                 sendJsonMessage(message);
               }}
               diffs={diffs}

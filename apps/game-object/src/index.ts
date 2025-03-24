@@ -159,6 +159,7 @@ export class GameDurableObject extends DurableObject<Env> {
         const { diffs, newState } = await generateGuesses(
           this.state,
           data.clue,
+          data.modelId,
         );
         this.state = newState;
         await this.ctx.storage.put('state', this.state);
