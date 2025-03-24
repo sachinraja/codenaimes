@@ -18,7 +18,7 @@ type Status = 'loading' | 'error' | 'ready';
 export function GameController({ roomId }: GameControllerProps) {
   const [status, setStatus] = useState<Status>('loading');
 
-  const socketURL = `ws://localhost:8787/room/${roomId}`;
+  const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}`;
 
   const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketURL, {
     onError() {

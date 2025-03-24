@@ -12,7 +12,7 @@ export function CreateRoomButton() {
       className="text-lg cursor-pointer"
       onClick={async () => {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_WORKERS_URL}/create-room`,
+          `${process.env.NEXT_PUBLIC_WORKERS_HTTP_URL}/create-room`,
           {
             method: 'POST',
           },
