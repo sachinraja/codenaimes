@@ -3,5 +3,8 @@
   "editor.defaultFormatter": "biomejs.biome",
   "files.associations": {
     "wrangler.json": "jsonc"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "always"
   }
 }

@@ -1,5 +1,9 @@
-import Game from '@/components/game';
+import { GameController } from '@/components/game-controller';
 
-export default function Room() {
-  return <Game />;
+export default async function Room({
+  params,
+}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  return <GameController roomId={id} />;
 }

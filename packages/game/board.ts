@@ -57,7 +57,7 @@ export function getGameState(
   const assassinWord = board.find((word) => word.type === 'assassin');
   if (assassinWord?.revealed)
     return {
-      state: 'complete',
+      stage: 'complete',
       winner: otherTeam,
     };
 
@@ -66,18 +66,18 @@ export function getGameState(
 
   if (redWords.every((word) => word.revealed))
     return {
-      state: 'complete',
+      stage: 'complete',
       winner: 'red',
     };
 
   if (blueWords.every((word) => word.revealed))
     return {
-      state: 'complete',
+      stage: 'complete',
       winner: 'blue',
     };
 
   return {
-    state: 'playing',
+    stage: 'playing',
     currentTeam: lastGuessedTeam,
   };
 }

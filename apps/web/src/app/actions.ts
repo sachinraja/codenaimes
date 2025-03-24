@@ -52,7 +52,7 @@ export async function generateClue(
     });
 
     const gameState = getGameState(board, currentTeam);
-    if (gameState.state !== 'playing') {
+    if (gameState.stage !== 'playing') {
       diffs.push({
         type: 'state',
         newState: gameState,

@@ -1,5 +1,4 @@
-import type { GameState } from './types';
-import type { GameWord } from './word';
+import type { Board, GameState } from './types';
 
 export interface BaseDiff {
   type: 'selection' | 'state';
@@ -18,7 +17,7 @@ export interface StateDiff extends BaseDiff {
 
 export type Diff = SelectionDiff | StateDiff;
 
-export function applySelectionDiff(board: GameWord[], diff: SelectionDiff) {
+export function applySelectionDiff(board: Board, diff: SelectionDiff) {
   board[diff.index] = {
     ...board[diff.index],
     revealed: true,

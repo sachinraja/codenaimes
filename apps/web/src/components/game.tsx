@@ -32,7 +32,9 @@ const baseClientBoard: ClientWord[] = Array.from({ length: 25 }, () => ({
   visibleState: 'hidden',
 }));
 
-function Game() {
+type GameProps = {};
+
+function Game(props: GameProps) {
   const [board, setBoard] = useState(loadingBoard);
   const [clientBoard, setClientBoard] = useState<ClientWord[]>(baseClientBoard);
   const [word, setWord] = useState('');
@@ -40,7 +42,8 @@ function Game() {
   const [isSelecting, setIsSelecting] = useState(false);
   const [currentTeam, setCurrentTeam] = useState<Team>('red');
   const [gameState, setGameState] = useState<GameState>({
-    state: 'playing',
+    stage: 'playing',
+    board: [],
     currentTeam: 'red',
   });
 
@@ -101,7 +104,8 @@ function Game() {
     setWord('');
     const nextTeam = currentTeam === 'red' ? 'blue' : 'red';
     setGameState({
-      state: 'playing',
+      stage: 'playing',
+      board: [],
       currentTeam: nextTeam,
     });
     setCurrentTeam(nextTeam);
@@ -115,7 +119,7 @@ function Game() {
   return (
     <div className="space-y-4 max-w-2xl mx-auto p-4">
       <div className="flex justify-between items-center">
-        {gameState.state === 'playing' || isSelecting ? (
+        {gameState.stage === 'playing' || isSelecting ? (
           <div
             className={cn({
               'text-red-500': currentTeam === 'red',
@@ -143,14 +147,14 @@ function Game() {
           value={word}
           onChange={(e) => setWord(e.target.value)}
           placeholder="Enter a clue..."
-          disabled={gameState.state !== 'playing'}
+          disabled={gameState.stage !== 'playing'}
           className="flex-1"
         />
         <div className="flex gap-2">
           <Select
             value={clueCount.toString()}
             onValueChange={(value) => setClueCount(Number(value))}
-            disabled={gameState.state !== 'playing'}
+            disabled={gameState.stage !== 'playing'}
           >
             <SelectTrigger className="w-24">
               <SelectValue />
@@ -164,7 +168,7 @@ function Game() {
             </SelectContent>
           </Select>
           <Button
-            disabled={gameState.state !== 'playing' || isSelecting}
+            disabled={gameState.stage !== 'playing' || isSelecting}
             type="submit"
           >
             Submit

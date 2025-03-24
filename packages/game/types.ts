@@ -1,13 +1,22 @@
 export type Team = 'red' | 'blue';
+
 export type GameState =
   | {
-      state: 'playing';
+      stage: 'lobby';
+      teamStateMap: Record<Team, 'waiting' | 'ready'>;
+    }
+  | {
+      stage: 'playing';
+      board: Board;
       currentTeam: Team;
     }
   | {
-      state: 'complete';
+      stage: 'complete';
+      board: Board;
       winner: Team;
     };
+
+export type GameStage = GameState['stage'];
 
 export type GameWord = {
   word: string;
