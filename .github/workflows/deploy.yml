@@ -18,5 +18,6 @@ jobs:
           secrets: |
             GOOGLE_GENERATIVE_AI_API_KEY
           workingDirectory: apps/game-object
+          packageManager: pnpm
         env:
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
