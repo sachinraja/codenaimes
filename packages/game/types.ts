@@ -13,12 +13,14 @@ export interface PlayingGameState extends BaseGameState {
   stage: 'playing';
   board: GameWord[];
   currentTeam: Team;
+  clues: Record<Team, Clue[]>;
 }
 
 export interface CompleteGameState extends BaseGameState {
   stage: 'complete';
   board: GameWord[];
   winner: Team;
+  clues: Record<Team, Clue[]>;
 }
 
 export type GameState = LobbyGameState | PlayingGameState | CompleteGameState;

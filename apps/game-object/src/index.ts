@@ -123,6 +123,10 @@ export class GameDurableObject extends DurableObject<Env> {
           stage: 'playing',
           board: generateRandomBoard(),
           currentTeam: 'red',
+          clues: {
+            red: [],
+            blue: [],
+          },
         };
         await this.ctx.storage.put('state', this.state);
 

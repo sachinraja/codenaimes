@@ -21,6 +21,7 @@ import type {
   UserState,
 } from '@codenaimes/game/types';
 import type { Diff, StateDiff } from '@codenaimes/ws-interface/diff';
+import { TeamDisplay } from './team-display';
 
 type GameProps = {
   userState: UserState;
@@ -41,12 +42,20 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
   const [currentTeam, setCurrentTeam] = useState<Team>(
     gameState.stage === 'playing' ? gameState.currentTeam : gameState.winner,
   );
+  const [clues, setClues] = useState<PlayingGameState['clues']>(
+    gameState.clues,
+  );
 
   useEffect(() => {
     const guessedWords: number[] = [];
 
     let stateDiff: StateDiff | undefined;
     for (const diff of diffs) {
+      if (diff.type === 'clue')
+        setClues((clues) => ({
+          ...clues,
+          [diff.team]: [...clues[diff.team], diff.clue],
+        }));
       if (diff.type === 'selection') guessedWords.push(diff.index);
       if (diff.type === 'state') stateDiff = diff;
     }
@@ -98,77 +107,93 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
   };
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto p-4">
-      <div className="flex justify-between items-center">
-        {gameState.stage === 'playing' || isSelecting ? (
-          <div className="font-semibold text-lg">
-            <span
+    <div className="flex max-w-4xl mx-auto p-4 space-x-4">
+      <TeamDisplay
+        team="red"
+        bgColor="bg-red-500/40"
+        textColor="text-red-500"
+        clues={clues.red}
+      />
+
+      <div className="flex-[5] space-y-4">
+        <div className="flex justify-between items-center">
+          {gameState.stage === 'playing' || isSelecting ? (
+            <div className="font-semibold text-lg">
+              <span
+                className={cn({
+                  'text-red-500': currentTeam === 'red',
+                  'text-blue-500': currentTeam === 'blue',
+                })}
+              >
+                {currentTeam}'s turn
+              </span>{' '}
+              <span>{currentTeam === userState.team && '(you)'}</span>
+            </div>
+          ) : (
+            <div
               className={cn({
-                'text-red-500': currentTeam === 'red',
-                'text-blue-500': currentTeam === 'blue',
+                'text-red-500': gameState.winner === 'red',
+                'text-blue-500': gameState.winner === 'blue',
+                'font-semibold text-lg': true,
               })}
             >
-              {currentTeam}'s turn
-            </span>{' '}
-            <span>{currentTeam === userState.team && '(you)'}</span>
-          </div>
-        ) : (
-          <div
-            className={cn({
-              'text-red-500': gameState.winner === 'red',
-              'text-blue-500': gameState.winner === 'blue',
-              'font-semibold text-lg': true,
-            })}
-          >
-            {gameState.winner} won
-          </div>
-        )}
-      </div>
-      <form onSubmit={handleWordSubmit} className="flex gap-2">
-        <Input
-          type="text"
-          value={word}
-          onChange={(e) => setWord(e.target.value)}
-          placeholder="Enter a clue..."
-          disabled={gameState.stage !== 'playing'}
-          className="flex-1"
-        />
-        <div className="flex gap-2">
-          <Select
-            value={clueCount.toString()}
-            onValueChange={(value) => setClueCount(Number(value))}
-            disabled={gameState.stage !== 'playing'}
-          >
-            <SelectTrigger className="w-24 cursor-pointer">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
-                <SelectItem
-                  className="cursor-pointer"
-                  key={num}
-                  value={num.toString()}
-                >
-                  {num}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            className="cursor-pointer"
-            disabled={
-              gameState.stage !== 'playing' ||
-              currentTeam !== userState.team ||
-              isSelecting
-            }
-            type="submit"
-          >
-            Submit
-          </Button>
+              {gameState.winner} won
+            </div>
+          )}
         </div>
-      </form>
+        <form onSubmit={handleWordSubmit} className="flex gap-2">
+          <Input
+            type="text"
+            value={word}
+            onChange={(e) => setWord(e.target.value)}
+            placeholder="Enter a clue..."
+            disabled={gameState.stage !== 'playing'}
+            className="flex-1"
+          />
+          <div className="flex gap-2">
+            <Select
+              value={clueCount.toString()}
+              onValueChange={(value) => setClueCount(Number(value))}
+              disabled={gameState.stage !== 'playing'}
+            >
+              <SelectTrigger className="w-24 cursor-pointer">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={num}
+                    value={num.toString()}
+                  >
+                    {num}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              className="cursor-pointer"
+              disabled={
+                gameState.stage !== 'playing' ||
+                currentTeam !== userState.team ||
+                isSelecting
+              }
+              type="submit"
+            >
+              Submit
+            </Button>
+          </div>
+        </form>
 
-      <Board board={gameState.board} clientBoard={clientBoard} />
+        <Board board={gameState.board} clientBoard={clientBoard} />
+      </div>
+
+      <TeamDisplay
+        team="blue"
+        bgColor="bg-blue-500/40"
+        textColor="text-blue-500"
+        clues={clues.blue}
+      />
     </div>
   );
 }

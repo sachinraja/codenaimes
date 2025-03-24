@@ -34,10 +34,21 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
     }:\nClue: ${clue.word}\nList:\n${wordList.join('\n')}`,
   });
 
-  const diffs: Diff[] = [];
+  const diffs: Diff[] = [
+    {
+      type: 'clue',
+      team: gameState.currentTeam,
+      clue,
+    },
+  ];
   const newBoard: Board = [...gameState.board];
   const otherTeam = getOtherTeam(gameState.currentTeam);
   let newState: GameState | null = null;
+  const newClues: PlayingGameState['clues'] = {
+    ...gameState.clues,
+    [gameState.currentTeam]: [...gameState.clues[gameState.currentTeam], clue],
+  };
+
   for (let i = 0; i < words.length; i++) {
     const index = gameState.board.findIndex((w) => w.word === words[i].word);
     if (index === -1) {
@@ -63,6 +74,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
         stage: 'complete',
         board: newBoard,
         winner: gameState.currentTeam === 'red' ? 'blue' : 'red',
+        clues: newClues,
       };
       diffs.push({
         type: 'state',
@@ -80,6 +92,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
           stage: 'complete',
           board: newBoard,
           winner: gameState.currentTeam,
+          clues: newClues,
         };
         diffs.push({
           type: 'state',
@@ -94,6 +107,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
         stage: 'playing',
         board: newBoard,
         currentTeam: otherTeam,
+        clues: newClues,
       };
       diffs.push({
         type: 'state',
@@ -109,6 +123,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
           stage: 'complete',
           board: newBoard,
           winner: otherTeam,
+          clues: newClues,
         };
         diffs.push({
           type: 'state',
@@ -121,6 +136,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
         stage: 'playing',
         board: newBoard,
         currentTeam: otherTeam,
+        clues: newClues,
       };
       diffs.push({
         type: 'state',
@@ -135,6 +151,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
       stage: 'playing',
       board: newBoard,
       currentTeam: getOtherTeam(gameState.currentTeam),
+      clues: newClues,
     };
     diffs.push({
       type: 'state',

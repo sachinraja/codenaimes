@@ -1,7 +1,13 @@
-import type { GameState } from '@codenaimes/game/types';
+import type { Clue, GameState, Team } from '@codenaimes/game/types';
 
 interface BaseDiff {
-  type: 'selection' | 'state';
+  type: string;
+}
+
+export interface ClueDiff extends BaseDiff {
+  type: 'clue';
+  team: Team;
+  clue: Clue;
 }
 
 export interface SelectionDiff extends BaseDiff {
@@ -14,4 +20,4 @@ export interface StateDiff extends BaseDiff {
   state: GameState;
 }
 
-export type Diff = SelectionDiff | StateDiff;
+export type Diff = SelectionDiff | StateDiff | ClueDiff;
