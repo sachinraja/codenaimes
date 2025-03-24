@@ -1,5 +1,5 @@
 {
-  "name": "@apps/room",
+  "name": "@apps/game-object",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",

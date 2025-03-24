@@ -39,7 +39,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
   const [clueCount, setClueCount] = useState(1);
   const [isSelecting, setIsSelecting] = useState(false);
   const [currentTeam, setCurrentTeam] = useState<Team>(
-    gameState.stage === 'playing' ? gameState.currentTeam : 'red',
+    gameState.stage === 'playing' ? gameState.currentTeam : gameState.winner,
   );
 
   useEffect(() => {
@@ -52,8 +52,6 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
     }
 
     setWord('');
-
-    console.log(stateDiff);
 
     (async () => {
       setIsSelecting(true);
@@ -141,18 +139,23 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
             onValueChange={(value) => setClueCount(Number(value))}
             disabled={gameState.stage !== 'playing'}
           >
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="w-24 cursor-pointer">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
-                <SelectItem key={num} value={num.toString()}>
+                <SelectItem
+                  className="cursor-pointer"
+                  key={num}
+                  value={num.toString()}
+                >
                   {num}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Button
+            className="cursor-pointer"
             disabled={
               gameState.stage !== 'playing' ||
               currentTeam !== userState.team ||

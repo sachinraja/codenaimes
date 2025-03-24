@@ -12,7 +12,7 @@ importers:
         specifier: ^1.9.4
         version: 1.9.4
 
-  apps/room:
+  apps/game-object:
     dependencies:
       '@ai-sdk/google':
         specifier: ^1.2.1

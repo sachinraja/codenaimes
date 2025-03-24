@@ -6,6 +6,8 @@ import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
 import { generateRoomId } from './room';
 import { generateGuesses } from './guess';
 
+const OBJECT_TTL_MS = 5 * 60 * 1000;
+
 interface WSAttachment {
   sessionId: string;
 }
@@ -20,27 +22,36 @@ function getUserState(
   return userSessions.get(cookie.sessionId) ?? null;
 }
 
-export class RoomDurableObject extends DurableObject<Env> {
+export class GameDurableObject extends DurableObject<Env> {
   userSessions: UserSessionMap;
   state: GameState;
+  created: boolean;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
     this.ctx.blockConcurrencyWhile(async () => {
-      const userSessions =
-        await this.ctx.storage.get<UserSessionMap>('userSessions');
-      this.userSessions = userSessions ?? new Map();
+      const [userSessions, state, created] = await Promise.all([
+        this.ctx.storage.get<UserSessionMap>('userSessions'),
+        this.ctx.storage.get<GameState>('state'),
+        this.ctx.storage.get<boolean>('created'),
+        this.resetTTL(),
+      ]);
 
-      const state = await this.ctx.storage.get<GameState>('state');
+      this.userSessions = userSessions ?? new Map();
       this.state = state ?? {
         stage: 'lobby',
         teamStateMap: { red: 'waiting', blue: 'waiting' },
       };
+      this.created = created ?? false;
     });
   }
 
   async fetch(request: Request): Promise<Response> {
+    if (!this.created) return new Response('Not found', { status: 404 });
+
+    await this.resetTTL();
+
     const webSocketPair = new WebSocketPair();
     const [client, server] = Object.values(webSocketPair);
 
@@ -50,6 +61,9 @@ export class RoomDurableObject extends DurableObject<Env> {
     });
 
     let user = getUserState(request, this.userSessions);
+    if (!user && this.state.stage !== 'lobby')
+      return new Response('Unauthorized', { status: 401 });
+
     if (!user) {
       const sessionId = crypto.randomUUID();
       const team: Team = this.userSessions.size % 2 === 0 ? 'red' : 'blue';
@@ -87,10 +101,15 @@ export class RoomDurableObject extends DurableObject<Env> {
     return res;
   }
 
+  async alarm() {
+    await this.ctx.storage.deleteAll();
+  }
+
   async webSocketMessage(
     ws: WebSocket,
     message: string | ArrayBuffer,
   ): Promise<void> {
+    await this.resetTTL();
     if (typeof message !== 'string') return;
 
     const attachment = ws.deserializeAttachment() as WSAttachment;
@@ -159,6 +178,15 @@ export class RoomDurableObject extends DurableObject<Env> {
     for (const clientWS of this.ctx.getWebSockets())
       clientWS.send(messageString);
   }
+
+  async resetTTL() {
+    await this.ctx.storage.setAlarm(Date.now() + OBJECT_TTL_MS);
+  }
+
+  createRoom() {
+    this.created = true;
+    this.ctx.storage.put('created', true);
+  }
 }
 
 const corsHeaders: Record<string, string> = {
@@ -178,6 +206,9 @@ export default {
 
     if (request.method === 'POST' && path === '/create-room') {
       const roomId = generateRoomId();
+      const id = env.GAME_DURABLE_OBJECT.idFromName(roomId);
+      const stub = env.GAME_DURABLE_OBJECT.get(id);
+      await stub.createRoom();
 
       return new Response(JSON.stringify({ id: roomId }), {
         headers: {
@@ -196,8 +227,8 @@ export default {
       }
 
       const roomId = path.slice(6);
-      const id = env.ROOM_DURABLE_OBJECT.idFromName(roomId);
-      const stub = env.ROOM_DURABLE_OBJECT.get(id);
+      const id = env.GAME_DURABLE_OBJECT.idFromName(roomId);
+      const stub = env.GAME_DURABLE_OBJECT.get(id);
 
       return stub.fetch(request);
     }

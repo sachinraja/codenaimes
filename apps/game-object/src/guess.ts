@@ -37,7 +37,7 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
   const diffs: Diff[] = [];
   const newBoard: Board = [...gameState.board];
   const otherTeam = getOtherTeam(gameState.currentTeam);
-  let newState: GameState;
+  let newState: GameState | null = null;
   for (let i = 0; i < words.length; i++) {
     const index = gameState.board.findIndex((w) => w.word === words[i].word);
     if (index === -1) {
@@ -130,15 +130,20 @@ export async function generateGuesses(gameState: PlayingGameState, clue: Clue) {
     }
   }
 
-  newState ??= {
-    stage: 'playing',
-    board: newBoard,
-    currentTeam: getOtherTeam(gameState.currentTeam),
-  };
+  if (!newState) {
+    newState = {
+      stage: 'playing',
+      board: newBoard,
+      currentTeam: getOtherTeam(gameState.currentTeam),
+    };
+    diffs.push({
+      type: 'state',
+      state: newState,
+    });
+  }
 
   return {
     diffs,
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    newState: newState!,
+    newState,
   };
 }

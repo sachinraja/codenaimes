@@ -6,17 +6,26 @@ import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
 import type { UserState, GameState } from '@codenaimes/game/types';
 import { Lobby } from './lobby';
 import Game from './game';
-import { LoadingScreen } from './loading';
+import { TextScreen } from './text-screen';
 import type { Diff } from '@codenaimes/ws-interface/diff';
 
 interface GameControllerProps {
   roomId: string;
 }
 
+type Status = 'loading' | 'error' | 'ready';
+
 export function GameController({ roomId }: GameControllerProps) {
+  const [status, setStatus] = useState<Status>('loading');
+
   const socketURL = `ws://localhost:8787/room/${roomId}`;
-  const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketURL);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketURL, {
+    onError() {
+      setStatus('error');
+    },
+  });
+
   const [gameState, setGameState] = useState<GameState>({
     stage: 'lobby',
     teamStateMap: {
@@ -37,7 +46,7 @@ export function GameController({ roomId }: GameControllerProps) {
       case 'sync': {
         setGameState(message.gameState);
         setUserState(message.userState);
-        setIsLoading(false);
+        setStatus('ready');
         break;
       }
       case 'diff': {
@@ -55,9 +64,14 @@ export function GameController({ roomId }: GameControllerProps) {
 
   return (
     <>
-      {isLoading ? (
-        <LoadingScreen />
-      ) : (
+      {status === 'loading' && <TextScreen>Loading...</TextScreen>}
+      {status === 'error' && (
+        <TextScreen>
+          <p>Error connecting to server</p>
+          <p>Room may not be created</p>
+        </TextScreen>
+      )}
+      {status === 'ready' && (
         <>
           {gameState.stage === 'lobby' && (
             <Lobby

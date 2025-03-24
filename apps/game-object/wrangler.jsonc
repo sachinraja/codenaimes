@@ -9,15 +9,15 @@
   "compatibility_date": "2025-03-21",
   "migrations": [
     {
-      "new_classes": ["RoomDurableObject"],
+      "new_classes": ["GameDurableObject"],
       "tag": "v1"
     }
   ],
   "durable_objects": {
     "bindings": [
       {
-        "class_name": "RoomDurableObject",
-        "name": "ROOM_DURABLE_OBJECT"
+        "class_name": "GameDurableObject",
+        "name": "GAME_DURABLE_OBJECT"
       }
     ]
   },
