@@ -21,6 +21,7 @@ jobs:
         with:
           wranglerVersion: 4.4.0
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           secrets: |
             GOOGLE_GENERATIVE_AI_API_KEY
           workingDirectory: apps/game-object
