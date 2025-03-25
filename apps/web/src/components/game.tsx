@@ -23,6 +23,7 @@ import type {
 import type { Diff, StateDiff } from '@codenaimes/ws-interface/diff';
 import { TeamDisplay } from './team-display';
 import { type ModelId, models } from '@codenaimes/game/model';
+import { LoaderCircleIcon } from 'lucide-react';
 
 type GameProps = {
   userState: UserState;
@@ -46,7 +47,8 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
   const [clues, setClues] = useState<PlayingGameState['clues']>(
     gameState.clues,
   );
-  const [modelId, setModelId] = useState<ModelId>('gemini-flash-1.5');
+  const [modelId, setModelId] = useState<ModelId>('gemini-flash-2.0');
+  const [isLoadingGuesses, setIsLoadingGuesses] = useState(false);
 
   useEffect(() => {
     const guessedWords: number[] = [];
@@ -58,11 +60,13 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
           ...clues,
           [diff.team]: [...clues[diff.team], diff.clue],
         }));
+
       if (diff.type === 'selection') guessedWords.push(diff.index);
       if (diff.type === 'state') stateDiff = diff;
     }
 
     setWord('');
+    setIsLoadingGuesses(false);
 
     (async () => {
       setIsSelecting(true);
@@ -105,6 +109,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
     e.preventDefault();
     if (!word.trim()) return;
 
+    setIsLoadingGuesses(true);
     submitClue({ word, count: clueCount }, modelId);
   };
 
@@ -198,11 +203,16 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
               disabled={
                 gameState.stage !== 'playing' ||
                 currentTeam !== userState.team ||
-                isSelecting
+                isSelecting ||
+                isLoadingGuesses
               }
               type="submit"
             >
-              Submit
+              {isLoadingGuesses ? (
+                <LoaderCircleIcon className="animate-spin" />
+              ) : (
+                'Submit'
+              )}
             </Button>
           </div>
         </form>

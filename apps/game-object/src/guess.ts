@@ -1,6 +1,4 @@
 import { generateObject, type LanguageModelV1 } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import type {
   Board,
@@ -12,19 +10,33 @@ import type { Diff } from '@codenaimes/ws-interface/diff';
 import { getOtherTeam } from '@codenaimes/game/utils';
 import { env } from 'cloudflare:workers';
 import type { ModelId } from '@codenaimes/game/model';
+import { createWorkersAI } from 'workers-ai-provider';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 
 const modelIdToModelMap: Record<ModelId, () => LanguageModelV1> = {
-  'gemini-flash-1.5': () => {
-    return createGoogleGenerativeAI({
+  'gemini-flash-2.0': () =>
+    createGoogleGenerativeAI({
       apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
-    })('gemini-1.5-flash');
-  },
-  'gpt-4o-mini': () => {
-    return createOpenAI({
+    })('gemini-2.0-flash-001'),
+
+  'gpt-4o-mini': () =>
+    createOpenAI({
       apiKey: env.OPENAI_API_KEY,
-    })('gpt-4o-mini');
-  },
+    })('gpt-4o-mini'),
+
+  'llama-3.3-70b-instruct': () =>
+    createWorkersAI({
+      binding: env.AI,
+    })('@cf/meta/llama-3.3-70b-instruct-fp8-fast'),
+
+  'claude-3.5-haiku': () =>
+    createAnthropic({
+      apiKey: env.ANTHROPIC_API_KEY,
+    })('claude-3-5-haiku-latest'),
 };
+
 export async function generateGuesses(
   gameState: PlayingGameState,
   clue: Clue,

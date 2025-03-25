@@ -14,6 +14,9 @@ importers:
 
   apps/game-object:
     dependencies:
+      '@ai-sdk/anthropic':
+        specifier: ^1.2.1
+        version: 1.2.1(zod@3.24.2)
       '@ai-sdk/google':
         specifier: ^1.2.1
         version: 1.2.1(zod@3.24.2)
@@ -32,6 +35,9 @@ importers:
       cookie:
         specifier: ^1.0.2
         version: 1.0.2
+      workers-ai-provider:
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.0.0)
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -236,6 +242,12 @@ importers:
 
 packages:
 
+  '@ai-sdk/anthropic@1.2.1':
+    resolution: {integrity: sha512-X2bcuDXDKl8UCxUbiK+BX/xW8FLLzc36jngQmQycRvzr1Lmc8k8l+0pgLjgvmWRmbF+L9XOzP38Wm86bdTrFzQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.0.0
+
   '@ai-sdk/google@1.2.1':
     resolution: {integrity: sha512-kT3o8pEbks5JJDTIkUdL7OHCNcxrnWYu2s+DQUBdyJt7BTgCBLtqZAwTeDuO8lDAW2fRtVSs7Gk6OVU2yiutiQ==}
     engines: {node: '>=18'}
@@ -248,6 +260,15 @@ packages:
     peerDependencies:
       zod: ^3.0.0
 
+  '@ai-sdk/provider-utils@1.0.22':
+    resolution: {integrity: sha512-YHK2rpj++wnLVc9vPGzGFP3Pjeld2MwhKinetA0zKXOoHAT/Jit5O8kZsxcSlJPu9wvcGT1UGZEjZrtO7PfFOQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   '@ai-sdk/provider-utils@2.2.0':
     resolution: {integrity: sha512-RX5BnDSqudjvZjwwpROcxVQElyX7rUn/xImBgaZLXekSGqq8f7/tefqDcQiRbDZjuCd4CVIfhrK8y/Pta8cPfQ==}
     engines: {node: '>=18'}
@@ -259,6 +280,10 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.23.8
+
+  '@ai-sdk/provider@0.0.26':
+    resolution: {integrity: sha512-dQkfBDs2lTYpKM8389oopPdQgIU007GQyCbuPPrV+K6MtSII3HBfE0stUIMXUb44L+LK1t6GXPP7wjSzjO6uKg==}
+    engines: {node: '>=18'}
 
   '@ai-sdk/provider@1.1.0':
     resolution: {integrity: sha512-0M+qjp+clUD0R1E5eWQFhxEvWLNaOtGQRUaBn8CUABnSKredagq92hUS9VjOzGsTm37xLfpaxl97AVtbeOsHew==}
@@ -1837,6 +1862,10 @@ packages:
   eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
 
+  eventsource-parser@1.1.2:
+    resolution: {integrity: sha512-v0eOBUbiaFojBu2s2NPBfYUoRR9GjcDNvCXVaqEf5vVfpIAh9f8RCo4vXTP8c63QRKCFwoLpMpTdPwwhEKVgzA==}
+    engines: {node: '>=14.18'}
+
   eventsource-parser@3.0.0:
     resolution: {integrity: sha512-T1C0XCUimhxVQzW4zFipdx0SficT651NnkR0ZSH3yQwh+mFMdLfgjABVi4YtMTtaL4s168593DaoaRLMqryavA==}
     engines: {node: '>=18.0.0'}
@@ -1851,6 +1880,9 @@ packages:
   fast-equals@5.2.2:
     resolution: {integrity: sha512-V7/RktU11J3I36Nwq2JnZEM7tNm17eBJz+u25qdxBZeCKiX6BkVSZQjwWIr+IobgnZy+ag73tTZgZi7tr0LrBw==}
     engines: {node: '>=6.0.0'}
+
+  fetch-event-stream@0.1.5:
+    resolution: {integrity: sha512-V1PWovkspxQfssq/NnxoEyQo1DV+MRK/laPuPblIZmSjMN8P5u46OhlFQznSr9p/t0Sp8Uc6SbM3yCMfr0KU8g==}
 
   form-data@4.0.2:
     resolution: {integrity: sha512-hGfm/slu0ZabnNt4oaRZ6uREyfCj6P4fT/n6A1rGV+Z0VdGXjfOhVUpkn6qVQONHGIFwmveGXyDs75+nr6FM8w==}
@@ -2335,6 +2367,9 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
+  workers-ai-provider@0.2.0:
+    resolution: {integrity: sha512-80ZeFBrNB5kZU2QDqbVxYt6yYP6VD+PeBcvDFQPRu6Qii1NpqaQJ4e+BTnTaairMxBa9hcAoU+Gnmp30svx4jA==}
+
   wrangler@4.4.0:
     resolution: {integrity: sha512-VmHBpocMk/GTEER+jJzkQeGNx5i/qJJKoUse5zvKmJOnELG/dhEQBJoaWxllwOfaPhIbnqeXdtrN/B+dfQAsFA==}
     engines: {node: '>=18.0.0'}
@@ -2373,6 +2408,12 @@ packages:
 
 snapshots:
 
+  '@ai-sdk/anthropic@1.2.1(zod@3.24.2)':
+    dependencies:
+      '@ai-sdk/provider': 1.1.0
+      '@ai-sdk/provider-utils': 2.2.1(zod@3.24.2)
+      zod: 3.24.2
+
   '@ai-sdk/google@1.2.1(zod@3.24.2)':
     dependencies:
       '@ai-sdk/provider': 1.1.0
@@ -2383,6 +2424,15 @@ snapshots:
     dependencies:
       '@ai-sdk/provider': 1.1.0
       '@ai-sdk/provider-utils': 2.2.1(zod@3.24.2)
+      zod: 3.24.2
+
+  '@ai-sdk/provider-utils@1.0.22(zod@3.24.2)':
+    dependencies:
+      '@ai-sdk/provider': 0.0.26
+      eventsource-parser: 1.1.2
+      nanoid: 3.3.11
+      secure-json-parse: 2.7.0
+    optionalDependencies:
       zod: 3.24.2
 
   '@ai-sdk/provider-utils@2.2.0(zod@3.24.2)':
@@ -2399,6 +2449,10 @@ snapshots:
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
       zod: 3.24.2
+
+  '@ai-sdk/provider@0.0.26':
+    dependencies:
+      json-schema: 0.4.0
 
   '@ai-sdk/provider@1.1.0':
     dependencies:
@@ -3830,6 +3884,8 @@ snapshots:
 
   eventemitter3@4.0.7: {}
 
+  eventsource-parser@1.1.2: {}
+
   eventsource-parser@3.0.0: {}
 
   exit-hook@2.2.1: {}
@@ -3837,6 +3893,8 @@ snapshots:
   exsolve@1.0.4: {}
 
   fast-equals@5.2.2: {}
+
+  fetch-event-stream@0.1.5: {}
 
   form-data@4.0.2:
     dependencies:
@@ -4313,6 +4371,16 @@ snapshots:
       '@cloudflare/workerd-linux-64': 1.20250320.0
       '@cloudflare/workerd-linux-arm64': 1.20250320.0
       '@cloudflare/workerd-windows-64': 1.20250320.0
+
+  workers-ai-provider@0.2.0(react@19.0.0):
+    dependencies:
+      '@ai-sdk/provider': 1.1.0
+      '@ai-sdk/provider-utils': 1.0.22(zod@3.24.2)
+      ai: 4.2.0(react@19.0.0)(zod@3.24.2)
+      fetch-event-stream: 0.1.5
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - react
 
   wrangler@4.4.0(@cloudflare/workers-types@4.20250321.0):
     dependencies:
