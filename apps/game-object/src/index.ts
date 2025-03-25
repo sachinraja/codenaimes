@@ -80,6 +80,7 @@ export class GameDurableObject extends DurableObject<Env> {
       res.headers.append(
         'Set-Cookie',
         serialize('sessionId', sessionId, {
+          sameSite: 'none',
           httpOnly: true,
           secure: this.env.ENVIRONMENT === 'production',
         }),
