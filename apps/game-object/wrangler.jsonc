@@ -13,6 +13,9 @@
       "tag": "v1"
     }
   ],
+  "observability": {
+    "enabled": true
+  },
   "durable_objects": {
     "bindings": [
       {
@@ -21,10 +24,41 @@
       }
     ]
   },
-  "observability": {
-    "enabled": true
-  },
   "ai": {
     "binding": "AI"
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "ENVIRONMENT": "production"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "class_name": "GameDurableObject",
+            "name": "GAME_DURABLE_OBJECT"
+          }
+        ]
+      },
+      "ai": {
+        "binding": "AI"
+      }
+    },
+    "development": {
+      "vars": {
+        "ENVIRONMENT": "development"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "class_name": "GameDurableObject",
+            "name": "GAME_DURABLE_OBJECT"
+          }
+        ]
+      },
+      "ai": {
+        "binding": "AI"
+      }
+    }
   }
 }
