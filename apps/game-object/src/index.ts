@@ -82,7 +82,7 @@ export class GameDurableObject extends DurableObject<Env> {
         serialize('sessionId', sessionId, {
           sameSite: 'none',
           httpOnly: true,
-          secure: this.env.ENVIRONMENT === 'production',
+          secure: true,
         }),
       );
 
