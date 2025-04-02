@@ -2,7 +2,6 @@ import { AutoRouter, cors, json, type IRequest } from 'itty-router';
 import { generateRoomId } from '../room';
 import { serialize } from 'cookie';
 import { z } from 'zod';
-import type { UserState } from '@codenaimes/game/types';
 
 const { preflight, corsify } = cors({
   origin: '*',
@@ -19,7 +18,7 @@ const baseRouter = AutoRouter<IRequest, CFArgs>({
 });
 
 const joinRoomSchema = z.object({
-  username: z.string(),
+  username: z.string().trim().min(1, 'Username is required'),
 });
 
 function userCookieHeader(sessionId: string) {

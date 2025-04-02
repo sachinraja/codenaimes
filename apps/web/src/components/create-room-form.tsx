@@ -12,7 +12,6 @@ export function CreateRoomForm() {
 
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
 
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_WORKERS_HTTP_URL}/create-room`,
@@ -41,7 +40,11 @@ export function CreateRoomForm() {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter a username..."
         />
-        <Button type="submit" className="text-lg cursor-pointer">
+        <Button
+          type="submit"
+          className="text-lg cursor-pointer"
+          disabled={!username.trim()}
+        >
           create room
         </Button>
       </form>
