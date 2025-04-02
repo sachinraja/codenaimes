@@ -10,6 +10,7 @@ import {
   type UserSessionMap,
 } from './utils/user';
 import { baseRouter } from './routers/base';
+import { canGameStart } from '@codenaimes/game/utils';
 
 const OBJECT_TTL_MS = 5 * 60 * 1000;
 
@@ -98,6 +99,12 @@ export class GameDurableObject extends DurableObject<Env> {
     const data = JSON.parse(message) as ServerMessage;
     switch (data.type) {
       case 'start-game': {
+        if (
+          this.state.stage !== 'lobby' ||
+          !canGameStart(Array.from(this.userSessions.values()))
+        )
+          return;
+
         this.state = {
           stage: 'playing',
           board: generateRandomBoard(),

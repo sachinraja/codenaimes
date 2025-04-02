@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { teams, type UserState, type Team } from '@codenaimes/game/types';
 import { CheckIcon, ClockIcon } from 'lucide-react';
-import { canGameStart } from '@/lib/game';
+import { canGameStart } from '@codenaimes/game/utils';
 
 export interface LobbyProps {
   startGame: () => void;

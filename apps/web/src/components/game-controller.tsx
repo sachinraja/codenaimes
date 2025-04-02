@@ -34,6 +34,7 @@ export function GameController({ roomId }: GameControllerProps) {
   const [userState, setUserState] = useState<UserState | null>(null);
   const [diffs, setDiffs] = useState<Diff[]>([]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we must only run this when we receive a new message
   useEffect(() => {
     const message = lastJsonMessage as ClientMessage;
     if (!message) return;
@@ -52,10 +53,16 @@ export function GameController({ roomId }: GameControllerProps) {
         break;
       }
       case 'player-state-change': {
-        const { userState } = message;
+        const { userState: changedUserState } = message;
+        if (userState && userState.id === changedUserState.id) {
+          setUserState(changedUserState);
+        }
+
         setUsers((prevUsers) => {
-          const newUsers = prevUsers.filter((user) => user.id !== userState.id);
-          newUsers.push(userState);
+          const newUsers = prevUsers.filter(
+            (user) => user.id !== changedUserState.id,
+          );
+          newUsers.push(changedUserState);
           return newUsers;
         });
         break;
