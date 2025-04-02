@@ -27,12 +27,6 @@
   "ai": {
     "binding": "AI"
   },
-  "routes": [
-    {
-      "pattern": "live.codenaimes.sachinraja.com",
-      "custom_domain": true
-    }
-  ],
   "env": {
     "production": {
       "vars": {
