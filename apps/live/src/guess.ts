@@ -112,9 +112,11 @@ export async function generateGuesses(
     }
 
     if (guessedWord.type === gameState.currentTeam) {
-      const currentTeamWon = newBoard.every(
+      const teamWords = newBoard.filter(
         (word) => word.type === gameState.currentTeam,
       );
+      const currentTeamWon = teamWords.every((word) => word.revealed);
+
       if (currentTeamWon) {
         newState = {
           stage: 'complete',
@@ -145,7 +147,9 @@ export async function generateGuesses(
     }
 
     if (guessedWord.type === otherTeam) {
-      const otherTeamWon = newBoard.every((word) => word.type === otherTeam);
+      const teamWords = newBoard.filter((word) => word.type === otherTeam);
+      const otherTeamWon = teamWords.every((word) => word.revealed);
+
       if (otherTeamWon) {
         newState = {
           stage: 'complete',

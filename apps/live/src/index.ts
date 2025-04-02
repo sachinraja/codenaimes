@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { GameState, UserState, Team } from '@codenaimes/game/types';
+import type { GameState, Team } from '@codenaimes/game/types';
 import { generateRandomBoard } from '@codenaimes/game/board';
 import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
 import { generateGuesses } from './guess';
