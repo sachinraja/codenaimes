@@ -1,5 +1,5 @@
 {
-  "name": "@apps/game-object",
+  "name": "@apps/live",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
@@ -15,6 +15,7 @@
     "@codenaimes/ws-interface": "workspace:*",
     "ai": "^4.2.0",
     "cookie": "^1.0.2",
+    "itty-router": "^5.0.18",
     "workers-ai-provider": "^0.2.0",
     "zod": "^3.24.2"
   },

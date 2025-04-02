@@ -1,4 +1,5 @@
-export type Team = 'red' | 'blue';
+export const teams = ['red', 'blue'] as const;
+export type Team = (typeof teams)[number];
 
 interface BaseGameState {
   stage: string;
@@ -6,7 +7,6 @@ interface BaseGameState {
 
 export interface LobbyGameState extends BaseGameState {
   stage: 'lobby';
-  teamStateMap: Record<Team, 'waiting' | 'ready'>;
 }
 
 export interface PlayingGameState extends BaseGameState {
@@ -47,7 +47,15 @@ export interface Clue {
   count: number;
 }
 
+export interface BaseUserState {
+  id: string;
+  username: string;
+  team: Team;
+}
+
 export interface UserState {
   id: string;
+  username: string;
   team: Team;
+  status: 'connected' | 'disconnected';
 }

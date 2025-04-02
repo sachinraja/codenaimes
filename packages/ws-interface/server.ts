@@ -1,6 +1,6 @@
 import type { ModelId } from '@codenaimes/game/model';
 import type { BaseMessage } from './base';
-import type { Clue } from '@codenaimes/game/types';
+import type { Clue, Team } from '@codenaimes/game/types';
 
 interface StartGameMessage extends BaseMessage {
   type: 'start-game';
@@ -16,4 +16,12 @@ interface ServerSyncMessage extends BaseMessage {
   type: 'sync';
 }
 
-export type ServerMessage = StartGameMessage | ClueMessage | ServerSyncMessage;
+interface SwitchTeamMessage extends BaseMessage {
+  type: 'switch-team';
+}
+
+export type ServerMessage =
+  | StartGameMessage
+  | ClueMessage
+  | ServerSyncMessage
+  | SwitchTeamMessage;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import useWebSocket from 'react-use-websocket';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
 import type { UserState, GameState } from '@codenaimes/game/types';
 import { Lobby } from './lobby';
@@ -17,26 +17,21 @@ type Status = 'loading' | 'error' | 'ready';
 
 export function GameController({ roomId }: GameControllerProps) {
   const [status, setStatus] = useState<Status>('loading');
+  const [users, setUsers] = useState<UserState[]>([]);
 
   const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}`;
 
-  const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketURL, {
-    onError() {
-      setStatus('error');
+  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
+    socketURL,
+    {
+      onError() {
+        setStatus('error');
+      },
     },
-  });
+  );
 
-  const [gameState, setGameState] = useState<GameState>({
-    stage: 'lobby',
-    teamStateMap: {
-      red: 'waiting',
-      blue: 'waiting',
-    },
-  });
-  const [userState, setUserState] = useState<UserState>({
-    id: '',
-    team: 'red',
-  });
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [userState, setUserState] = useState<UserState | null>(null);
   const [diffs, setDiffs] = useState<Diff[]>([]);
 
   useEffect(() => {
@@ -46,6 +41,7 @@ export function GameController({ roomId }: GameControllerProps) {
       case 'sync': {
         setGameState(message.gameState);
         setUserState(message.userState);
+        setUsers(message.users);
         setStatus('ready');
         break;
       }
@@ -55,12 +51,22 @@ export function GameController({ roomId }: GameControllerProps) {
         setDiffs(message.diffs);
         break;
       }
+      case 'player-state-change': {
+        const { userState } = message;
+        setUsers((prevUsers) => {
+          const newUsers = prevUsers.filter((user) => user.id !== userState.id);
+          newUsers.push(userState);
+          return newUsers;
+        });
+        break;
+      }
     }
   }, [lastJsonMessage]);
 
   useEffect(() => {
+    if (readyState !== ReadyState.OPEN) return;
     sendJsonMessage({ type: 'sync' });
-  }, [sendJsonMessage]);
+  }, [sendJsonMessage, readyState]);
 
   return (
     <>
@@ -71,7 +77,7 @@ export function GameController({ roomId }: GameControllerProps) {
           <p>Room may not be created</p>
         </TextScreen>
       )}
-      {status === 'ready' && (
+      {status === 'ready' && gameState && userState && (
         <>
           {gameState.stage === 'lobby' && (
             <Lobby
@@ -79,7 +85,11 @@ export function GameController({ roomId }: GameControllerProps) {
                 const message: ServerMessage = { type: 'start-game' };
                 sendJsonMessage(message);
               }}
-              gameState={gameState}
+              switchTeam={() => {
+                const message: ServerMessage = { type: 'switch-team' };
+                sendJsonMessage(message);
+              }}
+              users={users}
             />
           )}
           {(gameState.stage === 'playing' ||

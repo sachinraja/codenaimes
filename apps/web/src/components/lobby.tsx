@@ -2,32 +2,43 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
-import type { LobbyGameState, Team } from '@codenaimes/game/types';
+import { teams, type UserState, type Team } from '@codenaimes/game/types';
 import { CheckIcon, ClockIcon } from 'lucide-react';
-
-type TeamState = 'waiting' | 'ready';
+import { canGameStart } from '@/lib/game';
 
 export interface LobbyProps {
-  gameState: LobbyGameState;
   startGame: () => void;
+  switchTeam: () => void;
+  users: UserState[];
 }
 
-function TeamCard({ team, state }: { team: Team; state: TeamState }) {
+function TeamCard({ team, users }: { team: Team; users: UserState[] }) {
   return (
     <div
       className={cn(
-        'flex flex-row items-center justify-center space-x-4 m-4 p-4 rounded-lg text-white',
+        'flex flex-col items-center justify-center space-x-4 m-4 p-4 rounded-lg text-white',
         `bg-${team}-500`,
       )}
     >
       <h1 className="text-lg font-bold">{team}</h1>
 
-      {state === 'ready' ? <CheckIcon /> : <ClockIcon />}
+      <div>
+        {users.map((user) => (
+          <div key={user.id} className="flex flex-row items-center space-x-2">
+            {user.status === 'connected' ? (
+              <CheckIcon className="text-green-500" />
+            ) : (
+              <ClockIcon className="text-yellow-500" />
+            )}
+            <p>{user.username}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-export function Lobby({ gameState, startGame }: LobbyProps) {
+export function Lobby({ startGame, users, switchTeam }: LobbyProps) {
   return (
     <div className="flex flex-col items-center justify-center m-8">
       <h1 className="text-lg font-bold mb-4">lobby</h1>
@@ -36,16 +47,17 @@ export function Lobby({ gameState, startGame }: LobbyProps) {
         <Button
           className="cursor-pointer"
           onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
+            navigator.clipboard.writeText(`${window.location.href}/join`);
           }}
         >
-          copy room link
+          copy join link
+        </Button>
+        <Button className="cursor-pointer" onClick={switchTeam}>
+          switch teams
         </Button>
         <Button
           className="cursor-pointer"
-          disabled={Object.values(gameState.teamStateMap).some(
-            (state) => state === 'waiting',
-          )}
+          disabled={!canGameStart(users)}
           onClick={startGame}
         >
           start game
@@ -54,8 +66,12 @@ export function Lobby({ gameState, startGame }: LobbyProps) {
 
       <div className="w-1/2">
         <div className="flex flex-row justify-center items-center">
-          {Object.entries(gameState.teamStateMap).map(([team, state]) => (
-            <TeamCard key={team} team={team as Team} state={state} />
+          {teams.map((team) => (
+            <TeamCard
+              key={team}
+              team={team}
+              users={users.filter((user) => user.team === team)}
+            />
           ))}
         </div>
       </div>

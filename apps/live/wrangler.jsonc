@@ -6,7 +6,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "codenaimes",
   "main": "src/index.ts",
-  "compatibility_date": "2025-03-21",
+  "compatibility_date": "2025-03-20",
   "migrations": [
     {
       "new_classes": ["GameDurableObject"],
@@ -27,6 +27,12 @@
   "ai": {
     "binding": "AI"
   },
+  "routes": [
+    {
+      "pattern": "live.codenaimes.sachinraja.com",
+      "custom_domain": true
+    }
+  ],
   "env": {
     "production": {
       "vars": {
