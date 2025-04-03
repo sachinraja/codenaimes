@@ -22,7 +22,7 @@ interface WSAttachment {
 export class GameDurableObject extends DurableObject<Env> {
   stateManager: StateManager<{
     userSessions: UserSessionMap;
-    state: GameState;
+    gameState: GameState;
     created: boolean;
   }>;
 
@@ -32,7 +32,7 @@ export class GameDurableObject extends DurableObject<Env> {
     this.ctx.blockConcurrencyWhile(async () => {
       this.stateManager = createStateManager(ctx.storage, {
         userSessions: () => new Map(),
-        state: () => ({ stage: 'lobby' }),
+        gameState: () => ({ stage: 'lobby' }),
         created: () => false,
       });
     });
@@ -101,9 +101,9 @@ export class GameDurableObject extends DurableObject<Env> {
     const data = JSON.parse(message) as ServerMessage;
     switch (data.type) {
       case 'start-game': {
-        const state = await this.stateManager.get('state');
+        const gameState = await this.stateManager.get('gameState');
         if (
-          state.stage !== 'lobby' ||
+          gameState.stage !== 'lobby' ||
           !canGameStart(Array.from(userSessions.values()))
         )
           return;
@@ -117,7 +117,7 @@ export class GameDurableObject extends DurableObject<Env> {
             blue: [],
           },
         };
-        await this.stateManager.put('state', startState);
+        await this.stateManager.put('gameState', startState);
 
         this.sendToAllClients({
           type: 'diff',
@@ -131,26 +131,29 @@ export class GameDurableObject extends DurableObject<Env> {
         break;
       }
       case 'sync': {
-        const state = await this.stateManager.get('state');
+        const gameState = await this.stateManager.get('gameState');
         this.sendToClient(ws, {
           type: 'sync',
-          gameState: state,
+          gameState,
           userState: serverToClientUserState(user),
           users: Array.from(userSessions.values()).map(serverToClientUserState),
         });
         break;
       }
       case 'clue': {
-        const state = await this.stateManager.get('state');
-        if (state.stage !== 'playing' || user.team !== state.currentTeam)
+        const gameState = await this.stateManager.get('gameState');
+        if (
+          gameState.stage !== 'playing' ||
+          user.team !== gameState.currentTeam
+        )
           return;
 
-        const { diffs, newState } = await generateGuesses(
-          state,
+        const { diffs, newGameState } = await generateGuesses(
+          gameState,
           data.clue,
           data.modelId,
         );
-        await this.stateManager.put('state', newState);
+        await this.stateManager.put('gameState', newGameState);
 
         this.sendToAllClients({
           type: 'diff',
@@ -159,8 +162,8 @@ export class GameDurableObject extends DurableObject<Env> {
         break;
       }
       case 'switch-team': {
-        const state = await this.stateManager.get('state');
-        if (state.stage !== 'lobby') return;
+        const gameState = await this.stateManager.get('gameState');
+        if (gameState.stage !== 'lobby') return;
 
         const newTeam = user.team === 'red' ? 'blue' : 'red';
         const newUser: ServerUserState = {

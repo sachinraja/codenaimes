@@ -71,7 +71,7 @@ export async function generateGuesses(
   ];
   const newBoard: Board = [...gameState.board];
   const otherTeam = getOtherTeam(gameState.currentTeam);
-  let newState: GameState | null = null;
+  let newGameState: GameState | null = null;
   const newClues: PlayingGameState['clues'] = {
     ...gameState.clues,
     [gameState.currentTeam]: [...gameState.clues[gameState.currentTeam], clue],
@@ -98,7 +98,7 @@ export async function generateGuesses(
     const guessedWord = newBoard[index];
 
     if (guessedWord.type === 'assassin') {
-      newState = {
+      newGameState = {
         stage: 'complete',
         board: newBoard,
         winner: gameState.currentTeam === 'red' ? 'blue' : 'red',
@@ -106,7 +106,7 @@ export async function generateGuesses(
       };
       diffs.push({
         type: 'state',
-        state: newState,
+        state: newGameState,
       });
       break;
     }
@@ -118,7 +118,7 @@ export async function generateGuesses(
       const currentTeamWon = teamWords.every((word) => word.revealed);
 
       if (currentTeamWon) {
-        newState = {
+        newGameState = {
           stage: 'complete',
           board: newBoard,
           winner: gameState.currentTeam,
@@ -126,14 +126,14 @@ export async function generateGuesses(
         };
         diffs.push({
           type: 'state',
-          state: newState,
+          state: newGameState,
         });
         break;
       }
     }
 
     if (guessedWord.type === 'neutral') {
-      newState = {
+      newGameState = {
         stage: 'playing',
         board: newBoard,
         currentTeam: otherTeam,
@@ -141,7 +141,7 @@ export async function generateGuesses(
       };
       diffs.push({
         type: 'state',
-        state: newState,
+        state: newGameState,
       });
       break;
     }
@@ -151,7 +151,7 @@ export async function generateGuesses(
       const otherTeamWon = teamWords.every((word) => word.revealed);
 
       if (otherTeamWon) {
-        newState = {
+        newGameState = {
           stage: 'complete',
           board: newBoard,
           winner: otherTeam,
@@ -159,12 +159,12 @@ export async function generateGuesses(
         };
         diffs.push({
           type: 'state',
-          state: newState,
+          state: newGameState,
         });
         break;
       }
 
-      newState = {
+      newGameState = {
         stage: 'playing',
         board: newBoard,
         currentTeam: otherTeam,
@@ -172,14 +172,14 @@ export async function generateGuesses(
       };
       diffs.push({
         type: 'state',
-        state: newState,
+        state: newGameState,
       });
       break;
     }
   }
 
-  if (!newState) {
-    newState = {
+  if (!newGameState) {
+    newGameState = {
       stage: 'playing',
       board: newBoard,
       currentTeam: getOtherTeam(gameState.currentTeam),
@@ -187,12 +187,12 @@ export async function generateGuesses(
     };
     diffs.push({
       type: 'state',
-      state: newState,
+      state: newGameState,
     });
   }
 
   return {
     diffs,
-    newState,
+    newGameState,
   };
 }
