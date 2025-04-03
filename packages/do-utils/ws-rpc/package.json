@@ -1,0 +1,6 @@
+{
+  "name": "@do-utils/ws-rpc",
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}

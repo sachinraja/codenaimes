@@ -11,6 +11,7 @@ import {
 } from './utils/user';
 import { baseRouter } from './routers/base';
 import { canGameStart } from '@codenaimes/game/utils';
+import { type StateManager, createStateManager } from '@do-utils/state-manager';
 
 const OBJECT_TTL_MS = 5 * 60 * 1000;
 
@@ -19,29 +20,27 @@ interface WSAttachment {
 }
 
 export class GameDurableObject extends DurableObject<Env> {
-  userSessions: UserSessionMap;
-  state: GameState;
-  created: boolean;
+  stateManager: StateManager<{
+    userSessions: UserSessionMap;
+    state: GameState;
+    created: boolean;
+  }>;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
     this.ctx.blockConcurrencyWhile(async () => {
-      const [userSessions, state, created] = await Promise.all([
-        this.ctx.storage.get<UserSessionMap>('userSessions'),
-        this.ctx.storage.get<GameState>('state'),
-        this.ctx.storage.get<boolean>('created'),
-        this.resetTTL(),
-      ]);
-
-      this.userSessions = userSessions ?? new Map();
-      this.state = state ?? { stage: 'lobby' };
-      this.created = created ?? false;
+      this.stateManager = createStateManager(ctx.storage, {
+        userSessions: () => new Map(),
+        state: () => ({ stage: 'lobby' }),
+        created: () => false,
+      });
     });
   }
 
   async fetch(request: Request): Promise<Response> {
-    if (!this.created) return new Response('Not found', { status: 404 });
+    const created = await this.stateManager.get('created');
+    if (!created) return new Response('Not found', { status: 404 });
     await this.resetTTL();
 
     const webSocketPair = new WebSocketPair();
@@ -56,7 +55,9 @@ export class GameDurableObject extends DurableObject<Env> {
     if (!sessionId) {
       return new Response('Unauthorized', { status: 401 });
     }
-    const user = this.userSessions.get(sessionId);
+
+    const userSessions = await this.stateManager.get('userSessions');
+    const user = userSessions.get(sessionId);
     if (!user) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -67,8 +68,8 @@ export class GameDurableObject extends DurableObject<Env> {
       ...user,
       connections: user.connections + 1,
     };
-    this.userSessions.set(sessionId, newUser);
-    await this.ctx.storage.put('userSessions', this.userSessions);
+    userSessions.set(sessionId, newUser);
+    await this.stateManager.put('userSessions', userSessions);
 
     const attachment: WSAttachment = { sessionId: sessionId };
     server.serializeAttachment(attachment);
@@ -82,7 +83,7 @@ export class GameDurableObject extends DurableObject<Env> {
   }
 
   async alarm() {
-    await this.ctx.storage.deleteAll();
+    await this.stateManager.deleteAll();
   }
 
   async webSocketMessage(
@@ -93,19 +94,21 @@ export class GameDurableObject extends DurableObject<Env> {
     if (typeof message !== 'string') return;
 
     const attachment = ws.deserializeAttachment() as WSAttachment;
-    const user = this.userSessions.get(attachment.sessionId);
+    const userSessions = await this.stateManager.get('userSessions');
+    const user = userSessions.get(attachment.sessionId);
     if (!user) return;
 
     const data = JSON.parse(message) as ServerMessage;
     switch (data.type) {
       case 'start-game': {
+        const state = await this.stateManager.get('state');
         if (
-          this.state.stage !== 'lobby' ||
-          !canGameStart(Array.from(this.userSessions.values()))
+          state.stage !== 'lobby' ||
+          !canGameStart(Array.from(userSessions.values()))
         )
           return;
 
-        this.state = {
+        const startState: GameState = {
           stage: 'playing',
           board: generateRandomBoard(),
           currentTeam: 'red',
@@ -114,44 +117,40 @@ export class GameDurableObject extends DurableObject<Env> {
             blue: [],
           },
         };
-        await this.ctx.storage.put('state', this.state);
+        await this.stateManager.put('state', startState);
 
         this.sendToAllClients({
           type: 'diff',
           diffs: [
             {
               type: 'state',
-              state: this.state,
+              state: startState,
             },
           ],
         });
         break;
       }
       case 'sync': {
+        const state = await this.stateManager.get('state');
         this.sendToClient(ws, {
           type: 'sync',
-          gameState: this.state,
+          gameState: state,
           userState: serverToClientUserState(user),
-          users: Array.from(this.userSessions.values()).map(
-            serverToClientUserState,
-          ),
+          users: Array.from(userSessions.values()).map(serverToClientUserState),
         });
         break;
       }
       case 'clue': {
-        if (
-          this.state.stage !== 'playing' ||
-          user.team !== this.state.currentTeam
-        )
+        const state = await this.stateManager.get('state');
+        if (state.stage !== 'playing' || user.team !== state.currentTeam)
           return;
 
         const { diffs, newState } = await generateGuesses(
-          this.state,
+          state,
           data.clue,
           data.modelId,
         );
-        this.state = newState;
-        await this.ctx.storage.put('state', this.state);
+        await this.stateManager.put('state', newState);
 
         this.sendToAllClients({
           type: 'diff',
@@ -160,15 +159,16 @@ export class GameDurableObject extends DurableObject<Env> {
         break;
       }
       case 'switch-team': {
-        if (this.state.stage !== 'lobby') return;
+        const state = await this.stateManager.get('state');
+        if (state.stage !== 'lobby') return;
 
         const newTeam = user.team === 'red' ? 'blue' : 'red';
         const newUser: ServerUserState = {
           ...user,
           team: newTeam,
         };
-        this.userSessions.set(attachment.sessionId, newUser);
-        await this.ctx.storage.put('userSessions', this.userSessions);
+        userSessions.set(attachment.sessionId, newUser);
+        await this.stateManager.put('userSessions', userSessions);
 
         this.sendToAllClients({
           type: 'player-state-change',
@@ -181,15 +181,16 @@ export class GameDurableObject extends DurableObject<Env> {
 
   async webSocketClose(ws: WebSocket) {
     const attachment = ws.deserializeAttachment() as WSAttachment;
-    const user = this.userSessions.get(attachment.sessionId);
+    const userSessions = await this.stateManager.get('userSessions');
+    const user = userSessions.get(attachment.sessionId);
     if (!user) return;
 
     const newUser: ServerUserState = {
       ...user,
       connections: user.connections - 1,
     };
-    this.userSessions.set(attachment.sessionId, newUser);
-    await this.ctx.storage.put('userSessions', this.userSessions);
+    userSessions.set(attachment.sessionId, newUser);
+    await this.stateManager.put('userSessions', userSessions);
 
     this.sendToAllClients({
       type: 'player-state-change',
@@ -213,14 +214,14 @@ export class GameDurableObject extends DurableObject<Env> {
   }
 
   async createRoom(username: string) {
-    this.created = true;
-    await this.ctx.storage.put('created', true);
+    await this.stateManager.put('created', true);
 
     return this.createUser(username);
   }
 
   async createUser(username: string) {
-    const team: Team = this.userSessions.size % 2 === 0 ? 'red' : 'blue';
+    const userSessions = await this.stateManager.get('userSessions');
+    const team: Team = userSessions.size % 2 === 0 ? 'red' : 'blue';
 
     const user: ServerUserState = {
       id: crypto.randomUUID(),
@@ -230,8 +231,8 @@ export class GameDurableObject extends DurableObject<Env> {
     };
 
     const sessionId = crypto.randomUUID();
-    this.userSessions.set(sessionId, user);
-    await this.ctx.storage.put('userSessions', this.userSessions);
+    userSessions.set(sessionId, user);
+    await this.stateManager.put('userSessions', userSessions);
 
     this.sendToAllClients({
       type: 'player-state-change',

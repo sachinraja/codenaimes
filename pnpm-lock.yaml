@@ -12,43 +12,6 @@ importers:
         specifier: ^1.9.4
         version: 1.9.4
 
-  apps/game-object:
-    dependencies:
-      '@ai-sdk/anthropic':
-        specifier: ^1.2.1
-        version: 1.2.1(zod@3.24.2)
-      '@ai-sdk/google':
-        specifier: ^1.2.1
-        version: 1.2.1(zod@3.24.2)
-      '@ai-sdk/openai':
-        specifier: ^1.3.1
-        version: 1.3.1(zod@3.24.2)
-      '@codenaimes/game':
-        specifier: workspace:*
-        version: link:../../packages/game
-      '@codenaimes/ws-interface':
-        specifier: workspace:*
-        version: link:../../packages/ws-interface
-      ai:
-        specifier: ^4.2.0
-        version: 4.2.0(react@19.0.0)(zod@3.24.2)
-      cookie:
-        specifier: ^1.0.2
-        version: 1.0.2
-      workers-ai-provider:
-        specifier: ^0.2.0
-        version: 0.2.0(react@19.0.0)
-      zod:
-        specifier: ^3.24.2
-        version: 3.24.2
-    devDependencies:
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-      wrangler:
-        specifier: ^4.4.0
-        version: 4.4.0(@cloudflare/workers-types@4.20250321.0)
-
   apps/live:
     dependencies:
       '@ai-sdk/anthropic':
@@ -66,6 +29,9 @@ importers:
       '@codenaimes/ws-interface':
         specifier: workspace:*
         version: link:../../packages/ws-interface
+      '@do-utils/state-manager':
+        specifier: workspace:*
+        version: link:../../packages/do-utils/state-manager
       ai:
         specifier: ^4.2.0
         version: 4.2.0(react@19.0.0)(zod@3.24.2)
@@ -87,7 +53,7 @@ importers:
         version: 5.8.2
       wrangler:
         specifier: ^4.4.0
-        version: 4.4.0(@cloudflare/workers-types@4.20250321.0)
+        version: 4.4.0(@cloudflare/workers-types@4.20250403.0)
 
   apps/web:
     dependencies:
@@ -260,6 +226,15 @@ importers:
       tw-animate-css:
         specifier: ^1.2.4
         version: 1.2.4
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/do-utils/state-manager:
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250403.0
+        version: 4.20250403.0
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
@@ -449,8 +424,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20250321.0':
-    resolution: {integrity: sha512-jPwtZJC7tVFOwFazuwq96be8haTnY9qik8hJ+oLFi50d9LTWPPrnrNHC4OxZmJTEcPIAy0y1WFZHe8C/b7xFXQ==}
+  '@cloudflare/workers-types@4.20250403.0':
+    resolution: {integrity: sha512-wLsXNfxBPsV+PPUInCCFeoXTZMHNEAFHvVe1E0/S0Cp9JrKTsSEeIMY4zUvR5ULxNAQkeDVqPjYRaKFkzpkX3w==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -2584,8 +2559,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20250320.0':
     optional: true
 
-  '@cloudflare/workers-types@4.20250321.0':
-    optional: true
+  '@cloudflare/workers-types@4.20250403.0': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -4427,7 +4401,7 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  wrangler@4.4.0(@cloudflare/workers-types@4.20250321.0):
+  wrangler@4.4.0(@cloudflare/workers-types@4.20250403.0):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.0
       '@cloudflare/unenv-preset': 2.3.0(unenv@2.0.0-rc.15)(workerd@1.20250320.0)
@@ -4438,7 +4412,7 @@ snapshots:
       unenv: 2.0.0-rc.15
       workerd: 1.20250320.0
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20250321.0
+      '@cloudflare/workers-types': 4.20250403.0
       fsevents: 2.3.3
       sharp: 0.33.5
     transitivePeerDependencies:
