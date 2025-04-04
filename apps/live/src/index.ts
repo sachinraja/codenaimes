@@ -12,12 +12,14 @@ import {
 import { baseRouter } from './routers/base';
 import { canGameStart } from '@codenaimes/game/utils';
 import { type StateManager, createStateManager } from '@do-utils/state-manager';
+import {
+  createWebSocketHandler,
+  type WebSocketHandler,
+} from '@do-utils/ws-rpc/server';
+import { type RpcRouter, rpcRouter } from './rpc';
+import type { WSAttachment } from './utils';
 
 const OBJECT_TTL_MS = 5 * 60 * 1000;
-
-interface WSAttachment {
-  sessionId: string;
-}
 
 export class GameDurableObject extends DurableObject<Env> {
   stateManager: StateManager<{
@@ -25,9 +27,21 @@ export class GameDurableObject extends DurableObject<Env> {
     gameState: GameState;
     created: boolean;
   }>;
+  webSocketHandler: WebSocketHandler<RpcRouter>;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+
+    this.webSocketHandler = createWebSocketHandler({
+      router: rpcRouter,
+      createContext: async ({ ws }) => {
+        return {
+          ws,
+          doState: this.ctx,
+          stateManager: this.stateManager,
+        };
+      },
+    });
 
     this.ctx.blockConcurrencyWhile(async () => {
       this.stateManager = createStateManager(ctx.storage, {
@@ -71,7 +85,7 @@ export class GameDurableObject extends DurableObject<Env> {
     userSessions.set(sessionId, newUser);
     await this.stateManager.put('userSessions', userSessions);
 
-    const attachment: WSAttachment = { sessionId: sessionId };
+    const attachment: WSAttachment = { sessionId };
     server.serializeAttachment(attachment);
 
     this.sendToAllClients({
@@ -91,95 +105,8 @@ export class GameDurableObject extends DurableObject<Env> {
     message: string | ArrayBuffer,
   ): Promise<void> {
     await this.resetTTL();
-    if (typeof message !== 'string') return;
 
-    const attachment = ws.deserializeAttachment() as WSAttachment;
-    const userSessions = await this.stateManager.get('userSessions');
-    const user = userSessions.get(attachment.sessionId);
-    if (!user) return;
-
-    const data = JSON.parse(message) as ServerMessage;
-    switch (data.type) {
-      case 'start-game': {
-        const gameState = await this.stateManager.get('gameState');
-        if (
-          gameState.stage !== 'lobby' ||
-          !canGameStart(Array.from(userSessions.values()))
-        )
-          return;
-
-        const startState: GameState = {
-          stage: 'playing',
-          board: generateRandomBoard(),
-          currentTeam: 'red',
-          clues: {
-            red: [],
-            blue: [],
-          },
-        };
-        await this.stateManager.put('gameState', startState);
-
-        this.sendToAllClients({
-          type: 'diff',
-          diffs: [
-            {
-              type: 'state',
-              state: startState,
-            },
-          ],
-        });
-        break;
-      }
-      case 'sync': {
-        const gameState = await this.stateManager.get('gameState');
-        this.sendToClient(ws, {
-          type: 'sync',
-          gameState,
-          userState: serverToClientUserState(user),
-          users: Array.from(userSessions.values()).map(serverToClientUserState),
-        });
-        break;
-      }
-      case 'clue': {
-        const gameState = await this.stateManager.get('gameState');
-        if (
-          gameState.stage !== 'playing' ||
-          user.team !== gameState.currentTeam
-        )
-          return;
-
-        const { diffs, newGameState } = await generateGuesses(
-          gameState,
-          data.clue,
-          data.modelId,
-        );
-        await this.stateManager.put('gameState', newGameState);
-
-        this.sendToAllClients({
-          type: 'diff',
-          diffs: diffs,
-        });
-        break;
-      }
-      case 'switch-team': {
-        const gameState = await this.stateManager.get('gameState');
-        if (gameState.stage !== 'lobby') return;
-
-        const newTeam = user.team === 'red' ? 'blue' : 'red';
-        const newUser: ServerUserState = {
-          ...user,
-          team: newTeam,
-        };
-        userSessions.set(attachment.sessionId, newUser);
-        await this.stateManager.put('userSessions', userSessions);
-
-        this.sendToAllClients({
-          type: 'player-state-change',
-          userState: serverToClientUserState(newUser),
-        });
-        break;
-      }
-    }
+    await this.webSocketHandler.webSocketMessage(ws, message);
   }
 
   async webSocketClose(ws: WebSocket) {

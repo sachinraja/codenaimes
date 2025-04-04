@@ -15,9 +15,11 @@
     "@codenaimes/ws-interface": "workspace:*",
     "@do-utils/state-manager": "workspace:*",
     "@do-utils/ws-rpc": "workspace:*",
+    "@trpc/server": "^11.0.2",
     "ai": "^4.2.0",
     "cookie": "^1.0.2",
     "itty-router": "^5.0.18",
+    "valibot": "^1.0.0",
     "workers-ai-provider": "^0.2.0",
     "zod": "^3.24.2"
   },

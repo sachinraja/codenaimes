@@ -1,6 +1,13 @@
 {
   "name": "@do-utils/ws-rpc",
+  "exports": {
+    "./server": "./src/server.ts"
+  },
   "devDependencies": {
+    "@trpc/server": "^11.0.2",
     "typescript": "^5.8.2"
+  },
+  "peerDependencies": {
+    "@trpc/server": "^11"
   }
 }
