@@ -32,6 +32,9 @@ importers:
       '@do-utils/state-manager':
         specifier: workspace:*
         version: link:../../packages/do-utils/state-manager
+      '@do-utils/ws-rpc':
+        specifier: workspace:*
+        version: link:../../packages/do-utils/ws-rpc
       ai:
         specifier: ^4.2.0
         version: 4.2.0(react@19.0.0)(zod@3.24.2)
@@ -235,6 +238,12 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20250403.0
         version: 4.20250403.0
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/do-utils/ws-rpc:
+    devDependencies:
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
