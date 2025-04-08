@@ -1,23 +1,20 @@
 import { DurableObject } from 'cloudflare:workers';
 import type { GameState, Team } from '@codenaimes/game/types';
-import { generateRandomBoard } from '@codenaimes/game/board';
-import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
-import { generateGuesses } from './guess';
-import {
-  getSessionId,
-  serverToClientUserState,
-  type ServerUserState,
-  type UserSessionMap,
-} from './utils/user';
+import type { ClientMessage } from '@codenaimes/ws-interface';
+import { getSessionId } from './utils/user';
 import { baseRouter } from './routers/base';
-import { canGameStart } from '@codenaimes/game/utils';
 import { type StateManager, createStateManager } from '@do-utils/state-manager';
 import {
   createWebSocketHandler,
   type WebSocketHandler,
-} from '@do-utils/ws-rpc/server';
-import { type RpcRouter, rpcRouter } from './rpc';
-import type { WSAttachment } from './utils';
+} from '@do-utils/birpc/server';
+import { rpcRouter } from './rpc';
+import type { WSAttachment } from '@codenaimes/live-tools/utils';
+import {
+  serverToClientUserState,
+  type ServerUserState,
+  type UserSessionMap,
+} from '@codenaimes/live-tools/state';
 
 const OBJECT_TTL_MS = 5 * 60 * 1000;
 
@@ -27,13 +24,17 @@ export class GameDurableObject extends DurableObject<Env> {
     gameState: GameState;
     created: boolean;
   }>;
-  webSocketHandler: WebSocketHandler<RpcRouter>;
+  webSocketHandler: WebSocketHandler;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
     this.webSocketHandler = createWebSocketHandler({
       router: rpcRouter,
+      getWebSocketConnectionId(ws) {
+        const attachment = ws.deserializeAttachment() as WSAttachment;
+        return attachment.sessionId;
+      },
       createContext: async ({ ws }) => {
         return {
           ws,

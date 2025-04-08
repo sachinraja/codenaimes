@@ -1,17 +1,17 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { generateRandomBoard } from '@codenaimes/game/board';
 import { canGameStart } from '@codenaimes/game/utils';
+import { isWSAttachment } from './utils';
 import type { GameState } from '@codenaimes/game/types';
 import type { ClientMessage } from '@codenaimes/ws-interface';
-import { generateGuesses } from '@codenaimes/live-tools/guess';
+import { generateGuesses } from './guess';
 import { z } from 'zod';
 import { type ModelId, models } from '@codenaimes/game/model';
 import {
-  type GameStateManager,
   type ServerUserState,
+  type GameStateManager,
   serverToClientUserState,
-} from '@codenaimes/live-tools/state';
-import { isWSAttachment } from '@codenaimes/live-tools/utils';
+} from './state';
 
 export interface RpcContext {
   stateManager: GameStateManager;

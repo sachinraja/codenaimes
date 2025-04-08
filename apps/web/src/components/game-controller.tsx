@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
 import type { UserState, GameState } from '@codenaimes/game/types';
@@ -8,6 +8,15 @@ import { Lobby } from './lobby';
 import Game from './game';
 import { TextScreen } from './text-screen';
 import type { Diff } from '@codenaimes/ws-interface/diff';
+import { initTRPC } from '@trpc/server';
+import { castParse } from '@/lib/cast';
+import type {
+  ClientDiffMessage,
+  ClientPlayerStateChangeMessage,
+  ClientSyncMessage,
+} from '@codenaimes/ws-interface/client';
+import { createWebSocketHandler } from '@do-utils/birpc/server';
+import type { RpcRouter } from '@codenaimes/live-tools/rpc';
 
 interface GameControllerProps {
   roomId: string;
@@ -34,9 +43,63 @@ export function GameController({ roomId }: GameControllerProps) {
   const [userState, setUserState] = useState<UserState | null>(null);
   const [diffs, setDiffs] = useState<Diff[]>([]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  const webSocketHandler = useMemo(() => {
+    const t = initTRPC.create();
+
+    const router = t.router({
+      sync: t.procedure
+        .input(castParse<ClientSyncMessage>())
+        .mutation(({ input }) => {
+          setGameState(input.gameState);
+          setUserState(input.userState);
+          setUsers(input.users);
+          setStatus('ready');
+        }),
+      createDiffs: t.procedure
+        .input(castParse<ClientDiffMessage>())
+        .mutation(({ input }) => {
+          const stateDiff = input.diffs.find((diff) => diff.type === 'state');
+          if (stateDiff) setGameState(stateDiff.state);
+          setDiffs(input.diffs);
+        }),
+      changePlayerState: t.procedure
+        .input(castParse<ClientPlayerStateChangeMessage>())
+        .mutation(({ input }) => {
+          const { userState: changedUserState } = input;
+          if (userState && userState.id === changedUserState.id) {
+            setUserState(changedUserState);
+          }
+
+          setUsers((prevUsers) => {
+            const newUsers = prevUsers.filter(
+              (user) => user.id !== changedUserState.id,
+            );
+            newUsers.push(changedUserState);
+            return newUsers;
+          });
+        }),
+    });
+
+    return createWebSocketHandler({
+      createContext(opts) {
+        return {};
+      },
+      getWebSocketConnectionId(ws) {
+        return '1';
+      },
+      router,
+    });
+  }, []);
+
+  const client = useMemo(() => {
+    return webSocketHandler.createClient<RpcRouter>();
+  }, [webSocketHandler]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: we must only run this when we receive a new message
   useEffect(() => {
     const message = lastJsonMessage as ClientMessage;
+
     if (!message) return;
     switch (message.type) {
       case 'sync': {

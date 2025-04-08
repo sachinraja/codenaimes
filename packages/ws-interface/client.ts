@@ -2,19 +2,19 @@ import type { UserState, GameState } from '@codenaimes/game/types';
 import type { BaseMessage } from './base';
 import type { Diff } from './diff';
 
-interface ClientSyncMessage extends BaseMessage {
+export interface ClientSyncMessage extends BaseMessage {
   type: 'sync';
   gameState: GameState;
   userState: UserState;
   users: UserState[];
 }
 
-interface ClientDiffMessage extends BaseMessage {
+export interface ClientDiffMessage extends BaseMessage {
   type: 'diff';
   diffs: Diff[];
 }
 
-interface ClientPlayerStateChange extends BaseMessage {
+export interface ClientPlayerStateChangeMessage extends BaseMessage {
   type: 'player-state-change';
   userState: UserState;
 }
@@ -22,4 +22,4 @@ interface ClientPlayerStateChange extends BaseMessage {
 export type ClientMessage =
   | ClientSyncMessage
   | ClientDiffMessage
-  | ClientPlayerStateChange;
+  | ClientPlayerStateChangeMessage;
