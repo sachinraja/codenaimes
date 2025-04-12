@@ -1,79 +1,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
-import type { ClientMessage, ServerMessage } from '@codenaimes/ws-interface';
-import type { UserState, GameState } from '@codenaimes/game/types';
 import { Lobby } from './lobby';
 import Game from './game';
 import { TextScreen } from './text-screen';
-import type { Diff } from '@codenaimes/ws-interface/diff';
+import {
+  createBirpc,
+  createWebSocketClient,
+  createWebSocketHandler,
+  type ManagedClient,
+} from '@do-utils/birpc';
+import type { RPCRouter } from '@codenaimes/live-tools/rpc';
+import { useRPCRouter } from '@codenaimes/client-router';
+import { toast } from 'sonner';
 
 interface GameControllerProps {
   roomId: string;
 }
 
-type Status = 'loading' | 'error' | 'ready';
-
 export function GameController({ roomId }: GameControllerProps) {
-  const [status, setStatus] = useState<Status>('loading');
-  const [users, setUsers] = useState<UserState[]>([]);
-
   const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}`;
 
-  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(
-    socketURL,
-    {
-      onError() {
-        setStatus('error');
+  const { router, gameState, diffs, status, userState, users } = useRPCRouter();
+  const [c, setManagedClient] = useState<ManagedClient<RPCRouter> | null>(null);
+
+  useEffect(() => {
+    const handler = createWebSocketHandler({
+      createContext() {
+        return {};
       },
-    },
-  );
+      router,
+    });
 
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [userState, setUserState] = useState<UserState | null>(null);
-  const [diffs, setDiffs] = useState<Diff[]>([]);
+    const client = createWebSocketClient<RPCRouter>({
+      getConnectionId: () => '1',
+    });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: we must only run this when we receive a new message
-  useEffect(() => {
-    const message = lastJsonMessage as ClientMessage;
-    if (!message) return;
-    switch (message.type) {
-      case 'sync': {
-        setGameState(message.gameState);
-        setUserState(message.userState);
-        setUsers(message.users);
-        setStatus('ready');
-        break;
-      }
-      case 'diff': {
-        const stateDiff = message.diffs.find((diff) => diff.type === 'state');
-        if (stateDiff) setGameState(stateDiff.state);
-        setDiffs(message.diffs);
-        break;
-      }
-      case 'player-state-change': {
-        const { userState: changedUserState } = message;
-        if (userState && userState.id === changedUserState.id) {
-          setUserState(changedUserState);
-        }
+    const { manager, managedClient } = createBirpc({
+      handler,
+      client,
+      url: socketURL,
+      onOpen(ws) {
+        client.send(ws, client.builder.sync.queryOptions());
+      },
+    });
 
-        setUsers((prevUsers) => {
-          const newUsers = prevUsers.filter(
-            (user) => user.id !== changedUserState.id,
-          );
-          newUsers.push(changedUserState);
-          return newUsers;
-        });
-        break;
-      }
-    }
-  }, [lastJsonMessage]);
+    setManagedClient(managedClient);
 
-  useEffect(() => {
-    if (readyState !== ReadyState.OPEN) return;
-    sendJsonMessage({ type: 'sync' });
-  }, [sendJsonMessage, readyState]);
+    return () => manager.close();
+  }, [router, socketURL]);
 
   return (
     <>
@@ -89,12 +64,10 @@ export function GameController({ roomId }: GameControllerProps) {
           {gameState.stage === 'lobby' && (
             <Lobby
               startGame={() => {
-                const message: ServerMessage = { type: 'start-game' };
-                sendJsonMessage(message);
+                c?.send(c.builder.startGame.mutationOptions());
               }}
               switchTeam={() => {
-                const message: ServerMessage = { type: 'switch-team' };
-                sendJsonMessage(message);
+                c?.send(c.builder.switchTeam.mutationOptions());
               }}
               users={users}
             />
@@ -104,9 +77,17 @@ export function GameController({ roomId }: GameControllerProps) {
             <Game
               userState={userState}
               gameState={gameState}
-              submitClue={(clue, modelId) => {
-                const message: ServerMessage = { type: 'clue', clue, modelId };
-                sendJsonMessage(message);
+              submitClue={async (clue, modelId) => {
+                try {
+                  await c?.call(
+                    c.builder.clue.mutationOptions({
+                      clue,
+                      modelId,
+                    }),
+                  );
+                } catch {
+                  toast.error('Error submitting clue. Please try again.');
+                }
               }}
               diffs={diffs}
             />

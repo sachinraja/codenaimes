@@ -23,18 +23,24 @@ importers:
       '@ai-sdk/openai':
         specifier: ^1.3.1
         version: 1.3.1(zod@3.24.2)
+      '@codenaimes/client-router':
+        specifier: workspace:*
+        version: link:../../packages/client-router
       '@codenaimes/game':
         specifier: workspace:*
         version: link:../../packages/game
-      '@codenaimes/ws-interface':
+      '@codenaimes/live-tools':
         specifier: workspace:*
-        version: link:../../packages/ws-interface
+        version: link:../../packages/live-tools
+      '@do-utils/birpc':
+        specifier: workspace:*
+        version: link:../../packages/do-utils/birpc
       '@do-utils/state-manager':
         specifier: workspace:*
         version: link:../../packages/do-utils/state-manager
-      '@do-utils/ws-rpc':
-        specifier: workspace:*
-        version: link:../../packages/do-utils/ws-rpc
+      '@trpc/server':
+        specifier: ^11.0.2
+        version: 11.0.2(typescript@5.8.2)
       ai:
         specifier: ^4.2.0
         version: 4.2.0(react@19.0.0)(zod@3.24.2)
@@ -44,6 +50,9 @@ importers:
       itty-router:
         specifier: ^5.0.18
         version: 5.0.18
+      valibot:
+        specifier: ^1.0.0
+        version: 1.0.0(typescript@5.8.2)
       workers-ai-provider:
         specifier: ^0.2.0
         version: 0.2.0(react@19.0.0)
@@ -60,12 +69,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@codenaimes/client-router':
+        specifier: workspace:*
+        version: link:../../packages/client-router
       '@codenaimes/game':
         specifier: workspace:*
         version: link:../../packages/game
-      '@codenaimes/ws-interface':
+      '@codenaimes/live-tools':
         specifier: workspace:*
-        version: link:../../packages/ws-interface
+        version: link:../../packages/live-tools
+      '@do-utils/birpc':
+        specifier: workspace:*
+        version: link:../../packages/do-utils/birpc
       '@hookform/resolvers':
         specifier: ^4.1.3
         version: 4.1.3(react-hook-form@7.54.2(react@19.0.0))
@@ -147,6 +162,12 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.8
         version: 1.1.8(@types/react-dom@19.0.4(@types/react@19.0.12))(@types/react@19.0.12)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@trpc/client':
+        specifier: ^11.0.2
+        version: 11.0.2(@trpc/server@11.0.2(typescript@5.8.2))(typescript@5.8.2)
+      '@trpc/server':
+        specifier: ^11.0.2
+        version: 11.0.2(typescript@5.8.2)
       cmdk:
         specifier: 1.0.0
         version: 1.0.0(@types/react-dom@19.0.4(@types/react@19.0.12))(@types/react@19.0.12)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -233,17 +254,46 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/client-router:
+    dependencies:
+      '@codenaimes/game':
+        specifier: workspace:*
+        version: link:../game
+      react:
+        specifier: ^19
+        version: 19.0.0
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+    devDependencies:
+      '@trpc/server':
+        specifier: ^11.0.2
+        version: 11.0.2(typescript@5.8.2)
+      '@types/react':
+        specifier: ^19.0.12
+        version: 19.0.12
+
+  packages/do-utils/birpc:
+    dependencies:
+      partysocket:
+        specifier: ^1.1.3
+        version: 1.1.3
+    devDependencies:
+      '@trpc/client':
+        specifier: ^11.0.2
+        version: 11.0.2(@trpc/server@11.0.2(typescript@5.8.2))(typescript@5.8.2)
+      '@trpc/server':
+        specifier: ^11.0.2
+        version: 11.0.2(typescript@5.8.2)
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+
   packages/do-utils/state-manager:
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20250403.0
         version: 4.20250403.0
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/do-utils/ws-rpc:
-    devDependencies:
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
@@ -254,11 +304,41 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
-  packages/ws-interface:
+  packages/live-tools:
     dependencies:
+      '@ai-sdk/anthropic':
+        specifier: ^1.2.1
+        version: 1.2.1(zod@3.24.2)
+      '@ai-sdk/google':
+        specifier: ^1.2.1
+        version: 1.2.1(zod@3.24.2)
+      '@ai-sdk/openai':
+        specifier: ^1.3.1
+        version: 1.3.1(zod@3.24.2)
+      '@codenaimes/client-router':
+        specifier: workspace:*
+        version: link:../client-router
       '@codenaimes/game':
         specifier: workspace:*
         version: link:../game
+      '@do-utils/birpc':
+        specifier: workspace:*
+        version: link:../do-utils/birpc
+      '@do-utils/state-manager':
+        specifier: workspace:*
+        version: link:../do-utils/state-manager
+      '@trpc/server':
+        specifier: ^11.0.2
+        version: 11.0.2(typescript@5.8.2)
+      ai:
+        specifier: ^4.2.0
+        version: 4.2.0(react@19.0.0)(zod@3.24.2)
+      workers-ai-provider:
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.0.0)
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.2
     devDependencies:
       typescript:
         specifier: ^5.8.2
@@ -1628,6 +1708,17 @@ packages:
   '@tailwindcss/postcss@4.0.15':
     resolution: {integrity: sha512-qyrpoDKIO7wzkRbKCvGLo7gXRjT9/Njf7ZJiJhG4njrfZkvOhjwnaHpYbpxYeDysEg+9pB1R4jcd+vQ7ZUDsmQ==}
 
+  '@trpc/client@11.0.2':
+    resolution: {integrity: sha512-GlPEedbMTerkUfAJBsrwU6dg8N65lt3LBwrCoqR3MTZ64lRU/DQqyLjzpz5nRkEN0x4S2JmX0hASV9vc2KlSHA==}
+    peerDependencies:
+      '@trpc/server': 11.0.2
+      typescript: '>=5.7.2'
+
+  '@trpc/server@11.0.2':
+    resolution: {integrity: sha512-PIcm8UWFyE0AnIYjxsyc1zfVa6X10m9Opm1SJ2ou9Vu8dlXO6rMtmafLUXJsMeQk/3ecxObFtEiZIX8TvB3eCg==}
+    peerDependencies:
+      typescript: '>=5.7.2'
+
   '@types/d3-array@3.2.1':
     resolution: {integrity: sha512-Y2Jn2idRrLzUfAKV2LyRImR+y4oa2AntrgID95SHJxuMUrkNXmanDSed71sRNZysveJVt1hLLemQZIady0FpEg==}
 
@@ -1883,6 +1974,9 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  event-target-polyfill@0.0.4:
+    resolution: {integrity: sha512-Gs6RLjzlLRdT8X9ZipJdIZI/Y6/HhRLyq9RdDlCsnpxr/+Nn6bU2EFGuC94GjxqhM+Nmij2Vcq98yoHrU8uNFQ==}
+
   eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
 
@@ -2128,6 +2222,9 @@ packages:
 
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
+
+  partysocket@1.1.3:
+    resolution: {integrity: sha512-87Jd/nqPoWnVfzHE6Z12WLWTJ+TAgxs0b7i2S163HfQSrVDUK5tW/FC64T5N8L5ss+gqF+EV0BwjZMWggMY3UA==}
 
   path-to-regexp@6.3.0:
     resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
@@ -2379,6 +2476,14 @@ packages:
     resolution: {integrity: sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  valibot@1.0.0:
+    resolution: {integrity: sha512-1Hc0ihzWxBar6NGeZv7fPLY0QuxFMyxwYR2sF1Blu7Wq7EnremwY2W02tit2ij2VJT8HcSkHAQqmFfl77f73Yw==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   vaul@1.1.2:
     resolution: {integrity: sha512-ZFkClGpWyI2WUQjdLJ/BaGuV6AVQiJ3uELGk3OYtP+B6yCO7Cmn9vPFXVJkRaGkOJu3m8bQMgtyzNHixULceQA==}
@@ -3648,6 +3753,15 @@ snapshots:
       postcss: 8.5.3
       tailwindcss: 4.0.15
 
+  '@trpc/client@11.0.2(@trpc/server@11.0.2(typescript@5.8.2))(typescript@5.8.2)':
+    dependencies:
+      '@trpc/server': 11.0.2(typescript@5.8.2)
+      typescript: 5.8.2
+
+  '@trpc/server@11.0.2(typescript@5.8.2)':
+    dependencies:
+      typescript: 5.8.2
+
   '@types/d3-array@3.2.1': {}
 
   '@types/d3-color@3.1.3': {}
@@ -3908,6 +4022,8 @@ snapshots:
       '@esbuild/win32-ia32': 0.24.2
       '@esbuild/win32-x64': 0.24.2
 
+  event-target-polyfill@0.0.4: {}
+
   eventemitter3@4.0.7: {}
 
   eventsource-parser@1.1.2: {}
@@ -4119,6 +4235,10 @@ snapshots:
   object-assign@4.1.1: {}
 
   ohash@2.0.11: {}
+
+  partysocket@1.1.3:
+    dependencies:
+      event-target-polyfill: 0.0.4
 
   path-to-regexp@6.3.0: {}
 
@@ -4365,6 +4485,10 @@ snapshots:
   use-sync-external-store@1.4.0(react@19.0.0):
     dependencies:
       react: 19.0.0
+
+  valibot@1.0.0(typescript@5.8.2):
+    optionalDependencies:
+      typescript: 5.8.2
 
   vaul@1.1.2(@types/react-dom@19.0.4(@types/react@19.0.12))(@types/react@19.0.12)(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:

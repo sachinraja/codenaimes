@@ -1,9 +1,0 @@
-{
-  "name": "@codenaimes/ws-interface",
-  "dependencies": {
-    "@codenaimes/game": "workspace:*"
-  },
-  "devDependencies": {
-    "typescript": "^5.8.2"
-  }
-}
