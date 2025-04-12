@@ -1,6 +1,5 @@
 import type { GameState, Team, GameWord } from './types';
 import words from './words.json';
-import { getOtherTeam } from './utils';
 
 export function generateRandomBoard() {
   const randomWords = shuffle(words).slice(0, 25);

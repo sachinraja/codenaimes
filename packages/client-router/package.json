@@ -1,12 +1,15 @@
 {
   "name": "@codenaimes/client-router",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
-    "@codenaimes/game": "workspace:*",
-    "typescript": "^5.8.2"
+    "@codenaimes/game": "workspace:*"
   },
   "devDependencies": {
     "@trpc/server": "^11.0.2",
-    "@types/react": "^19.0.12"
+    "@types/react": "^19.0.12",
+    "typescript": "^5.8.2"
   },
   "peerDependencies": {
     "@trpc/server": "^11",

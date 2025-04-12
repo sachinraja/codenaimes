@@ -1,5 +1,12 @@
 {
   "name": "@codenaimes/game",
+  "exports": {
+    "./board": "./src/board.ts",
+    "./diff": "./src/diff.ts",
+    "./model": "./src/model.ts",
+    "./types": "./src/types.ts",
+    "./utils": "./src/utils.ts"
+  },
   "devDependencies": {
     "typescript": "^5.8.2"
   }

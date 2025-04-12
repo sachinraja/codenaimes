@@ -1,5 +1,11 @@
 {
   "name": "@codenaimes/live-tools",
+  "exports": {
+    "./guess": "./src/guess.ts",
+    "./rpc": "./src/rpc.ts",
+    "./state": "./src/state.ts",
+    "./utils": "./src/utils.ts"
+  },
   "scripts": {
     "gen-cf-types": "pnpm --filter \"@apps/live\" cf-typegen && cp ../../apps/live/worker-configuration.d.ts ."
   },
@@ -11,12 +17,15 @@
     "@codenaimes/client-router": "workspace:*",
     "@do-utils/state-manager": "workspace:*",
     "@do-utils/birpc": "workspace:*",
-    "@trpc/server": "^11.0.2",
     "ai": "^4.2.0",
     "workers-ai-provider": "^0.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@trpc/server": "^11.0.2",
     "typescript": "^5.8.2"
+  },
+  "peerDependencies": {
+    "@trpc/server": "^11"
   }
 }
