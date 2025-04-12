@@ -48,7 +48,7 @@ baseRouter.post('/create-room', async (req, env) => {
   const sessionId = await stub.createRoom(username);
 
   return json(
-    { id: roomId },
+    { roomId, sessionId },
     {
       headers: {
         'Set-Cookie': userCookieHeader(sessionId),
@@ -89,12 +89,16 @@ baseRouter.post('/room/:roomId/join', async (req, env) => {
   const { username } = result.data;
   const sessionId = await stub.createUser(username);
 
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Set-Cookie': userCookieHeader(sessionId),
+  return json(
+    {
+      sessionId,
     },
-  });
+    {
+      headers: {
+        'Set-Cookie': userCookieHeader(sessionId),
+      },
+    },
+  );
 });
 
 export { baseRouter };

@@ -16,10 +16,11 @@ import { toast } from 'sonner';
 
 interface GameControllerProps {
   roomId: string;
+  sessionId: string;
 }
 
-export function GameController({ roomId }: GameControllerProps) {
-  const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}`;
+export function GameController({ roomId, sessionId }: GameControllerProps) {
+  const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}?sessionId=${encodeURIComponent(sessionId)}`;
 
   const { router, gameState, diffs, status, setStatus, userState, users } =
     useRPCRouter();
@@ -60,8 +61,8 @@ export function GameController({ roomId }: GameControllerProps) {
       {status === 'loading' && <TextScreen>Loading...</TextScreen>}
       {status === 'error' && (
         <TextScreen>
-          <p>Error connecting to server</p>
-          <p>Room may not be created</p>
+          <p>Error. You may be unauthorized.</p>
+          <p>Have you joined the room?</p>
         </TextScreen>
       )}
       {status === 'ready' && gameState && userState && (

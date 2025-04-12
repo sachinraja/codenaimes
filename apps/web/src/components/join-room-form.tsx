@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
+import { joinRoom } from '@/app/actions';
 
 export function JoinRoomForm({ roomId }: { roomId: string }) {
   const [username, setUsername] = useState('');
@@ -13,18 +14,12 @@ export function JoinRoomForm({ roomId }: { roomId: string }) {
   const handleJoinRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_WORKERS_HTTP_URL}/room/${roomId}/join`,
-      {
-        body: JSON.stringify({ username }),
-        method: 'POST',
-        credentials: 'include',
-      },
-    );
-
-    if (!res.ok) return toast.error('Failed to join room');
-
-    router.push(`/room/${roomId}`);
+    try {
+      await joinRoom(roomId, username);
+      router.push(`/room/${roomId}`);
+    } catch {
+      toast.error('Failed to join room');
+    }
   };
 
   return (

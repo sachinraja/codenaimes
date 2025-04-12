@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
+import { createRoom } from '@/app/actions';
 
 export function CreateRoomForm() {
   const [username, setUsername] = useState('');
@@ -13,19 +14,12 @@ export function CreateRoomForm() {
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_WORKERS_HTTP_URL}/create-room`,
-      {
-        body: JSON.stringify({ username }),
-        method: 'POST',
-        credentials: 'include',
-      },
-    );
-
-    const data = await res.json();
-    if (!data?.id) return toast.error('Failed to create room');
-
-    router.push(`/room/${data.id}`);
+    try {
+      const roomId = await createRoom(username);
+      router.push(`/room/${roomId}`);
+    } catch {
+      toast.error('Failed to create room');
+    }
   };
 
   return (

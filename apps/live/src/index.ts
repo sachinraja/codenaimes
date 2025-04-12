@@ -1,6 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
 import type { GameState, Team } from '@codenaimes/game/types';
-import { getSessionId } from './utils/user';
 import { baseRouter } from './routers/base';
 import { type StateManager, createStateManager } from '@do-utils/state-manager';
 import {
@@ -73,7 +72,8 @@ export class GameDurableObject extends DurableObject<Env> {
       webSocket: client,
     });
 
-    const sessionId = getSessionId(request);
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get('sessionId');
     if (!sessionId) {
       return new Response('Unauthorized', { status: 401 });
     }
