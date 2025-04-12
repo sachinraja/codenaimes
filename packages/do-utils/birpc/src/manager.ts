@@ -56,13 +56,8 @@ export function createWebSocketManager({
       onClose?.(ws, ev);
 
       // try reconnect
-      if (reconnectAttempts < maxReconnectAttempts) {
-        reconnectAttempts += 1;
-        const delay = baseReconnectDelay * 2 ** reconnectAttempts;
-        setTimeout(() => {
-          webSocket = createWebSocket(url);
-        }, delay);
-      } else {
+      reconnectAttempts += 1;
+      if (reconnectAttempts > maxReconnectAttempts) {
         // reject all open promises if max reconnect attempts reached
         for (const openPromise of openPromises) {
           openPromise.reject(new Error('Max reconnect attempts reached'));
@@ -71,6 +66,10 @@ export function createWebSocketManager({
           `Reached max reconnect attempts (${maxReconnectAttempts}), closing connection`,
         );
       }
+      const delay = baseReconnectDelay * 2 ** reconnectAttempts;
+      setTimeout(() => {
+        webSocket = createWebSocket(url);
+      }, delay);
     };
 
     ws.onerror = (ev) => {
