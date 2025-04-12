@@ -1,9 +1,6 @@
 {
   "name": "@do-utils/birpc",
-  "exports": {
-    "./server": "./src/server.ts",
-    "./client": "./src/client.ts"
-  },
+  "exports": "./src/index.ts",
   "devDependencies": {
     "@trpc/client": "^11.0.2",
     "@trpc/server": "^11.0.2",
@@ -11,5 +8,8 @@
   },
   "peerDependencies": {
     "@trpc/server": "^11"
+  },
+  "dependencies": {
+    "partysocket": "^1.1.3"
   }
 }

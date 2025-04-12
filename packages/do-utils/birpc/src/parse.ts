@@ -4,6 +4,7 @@ import type {
 } from '@trpc/server';
 import {
   isObject,
+  type JSONRPC2,
   procedureTypes,
 } from '@trpc/server/unstable-core-do-not-import';
 
@@ -76,39 +77,65 @@ export interface ResponseMessage extends BaseMessage {
       };
 }
 
-export function parseMessage(
-  obj: unknown,
-  transformer: TRPCCombinedDataTransformer,
-): RequestMessage | ResponseMessage {
-  assertIsObject(obj);
+export function parseBaseEnvelope(message: unknown) {
+  assertIsObject(message);
 
-  const { id, jsonrpc, method, params } = obj;
+  const { id, jsonrpc } = message;
+
   assertIsRequestId(id);
   assertIsJSONRPC2OrUndefined(jsonrpc);
 
-  if ('method' in obj) {
-    assertIsProcedureType(method);
-    assertIsObject(params);
-    const { input: rawInput, path } = params;
+  return {
+    ...message,
+    id,
+    jsonrpc,
+  };
+}
 
-    assertIsString(path);
+type BaseEnvelope = ReturnType<typeof parseBaseEnvelope>;
 
-    const input = transformer.input.deserialize(rawInput);
-
-    return {
-      type: 'request',
-      id,
-      jsonrpc,
-      method,
-      input,
-      path,
-    };
+export function parseRequestMessage(
+  message: BaseEnvelope,
+  transformer: TRPCCombinedDataTransformer,
+): RequestMessage | null {
+  if (!('method' in message)) {
+    return null;
   }
 
-  if ('error' in obj) {
-    assertIsObject(obj.error);
+  const method = message.method;
+  assertIsProcedureType(method);
 
-    const error = transformer.output.deserialize(obj.error);
+  if (!('params' in message)) {
+    throw new Error('No params in message');
+  }
+
+  assertIsObject(message.params);
+  const { input: rawInput, path } = message.params;
+
+  assertIsString(path);
+
+  const input = transformer.input.deserialize(rawInput);
+
+  return {
+    type: 'request',
+    id: message.id,
+    jsonrpc: message.jsonrpc,
+    method,
+    input,
+    path,
+  };
+}
+
+export function parseResponseMessage(
+  message: BaseEnvelope,
+  transformer: TRPCCombinedDataTransformer,
+): ResponseMessage | null {
+  const { id, jsonrpc } = message;
+
+  if ('error' in message) {
+    assertIsObject(message.error);
+
+    const error = transformer.output.deserialize(message.error);
     assertIsObject(error);
 
     if (typeof error.code !== 'number') throw new Error('Invalid error code');
@@ -124,8 +151,8 @@ export function parseMessage(
     };
   }
 
-  if ('result' in obj) {
-    assertIsObject(obj.result);
+  if ('result' in message) {
+    assertIsObject(message.result);
 
     return {
       type: 'response',
@@ -133,10 +160,30 @@ export function parseMessage(
       jsonrpc,
       result: {
         type: 'data',
-        data: transformer.output.deserialize(obj.result.data),
+        data: transformer.output.deserialize(message.result.data),
       },
     };
   }
+
+  return null;
+}
+
+export function parseMessage({
+  message: rawMessage,
+  requestTransformer,
+  responseTransformer,
+}: {
+  message: unknown;
+  requestTransformer: TRPCCombinedDataTransformer;
+  responseTransformer: TRPCCombinedDataTransformer;
+}): RequestMessage | ResponseMessage {
+  const message = parseBaseEnvelope(rawMessage);
+
+  const requestMessage = parseRequestMessage(message, requestTransformer);
+  if (requestMessage) return requestMessage;
+
+  const responseMessage = parseResponseMessage(message, responseTransformer);
+  if (responseMessage) return responseMessage;
 
   throw new Error('Unable to transform request/response');
 }

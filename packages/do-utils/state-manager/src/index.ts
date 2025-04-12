@@ -1,4 +1,4 @@
-import type { DurableObjectState } from '@cloudflare/workers-types';
+import type { DurableObjectStorage } from '@cloudflare/workers-types';
 
 type Defaults<TState> = {
   [K in keyof TState]: () => TState[K];

@@ -1,5 +1,8 @@
 {
   "name": "@do-utils/state-manager",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250403.0",
     "typescript": "^5.8.2"

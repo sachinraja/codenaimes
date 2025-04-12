@@ -6,7 +6,9 @@ import { type StateManager, createStateManager } from '@do-utils/state-manager';
 import {
   createWebSocketHandler,
   type WebSocketHandler,
-} from '@do-utils/birpc/server';
+  type WebSocketClient,
+  createWebSocketClient,
+} from '@do-utils/birpc';
 import { rpcRouter } from '@codenaimes/live-tools/rpc';
 import type { WSAttachment } from '@codenaimes/live-tools/utils';
 import {
@@ -14,7 +16,6 @@ import {
   type ServerUserState,
   type UserSessionMap,
 } from '@codenaimes/live-tools/state';
-import type { WebSocketClient } from '@do-utils/birpc/client';
 import type { RpcClientRouter } from '@codenaimes/client-router';
 
 const OBJECT_TTL_MS = 5 * 60 * 1000;
@@ -33,10 +34,6 @@ export class GameDurableObject extends DurableObject<Env> {
 
     this.webSocketHandler = createWebSocketHandler({
       router: rpcRouter,
-      getWebSocketConnectionId(ws) {
-        const attachment = ws.deserializeAttachment() as WSAttachment;
-        return attachment.sessionId;
-      },
       createContext: async ({ ws }) => {
         return {
           ws,
@@ -46,7 +43,13 @@ export class GameDurableObject extends DurableObject<Env> {
         };
       },
     });
-    this.client = this.webSocketHandler.createClient<RpcClientRouter>();
+
+    this.client = createWebSocketClient<RpcClientRouter>({
+      getConnectionId(ws) {
+        const attachment = ws.deserializeAttachment() as WSAttachment;
+        return attachment.sessionId;
+      },
+    });
 
     this.ctx.blockConcurrencyWhile(async () => {
       this.stateManager = createStateManager(ctx.storage, {
@@ -82,6 +85,7 @@ export class GameDurableObject extends DurableObject<Env> {
     }
 
     this.ctx.acceptWebSocket(server);
+    await this.webSocketHandler.onOpen(server);
 
     const newUser: ServerUserState = {
       ...user,
@@ -114,10 +118,12 @@ export class GameDurableObject extends DurableObject<Env> {
     await this.resetTTL();
     console.log('live received message', message);
 
-    await this.webSocketHandler.webSocketMessage(ws, message);
+    await this.webSocketHandler.onMessage(ws, message);
   }
 
   async webSocketClose(ws: WebSocket) {
+    await this.webSocketHandler.onClose(ws);
+
     const attachment = ws.deserializeAttachment() as WSAttachment;
     const userSessions = await this.stateManager.get('userSessions');
     const user = userSessions.get(attachment.sessionId);

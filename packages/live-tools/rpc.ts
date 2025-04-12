@@ -11,7 +11,7 @@ import {
   type GameStateManager,
   serverToClientUserState,
 } from './state';
-import type { WebSocketClient } from '@do-utils/birpc/client';
+import type { WebSocketClient } from '@do-utils/birpc';
 import type { RpcClientRouter } from '@codenaimes/client-router';
 
 export interface RpcContext {
@@ -113,7 +113,6 @@ export const rpcRouter = t.router({
     )
     .mutation(async ({ ctx, input }) => {
       const gameState = await ctx.stateManager.get('gameState');
-      console.log('clue', gameState);
       if (
         gameState.stage !== 'playing' ||
         ctx.user.team !== gameState.currentTeam
@@ -165,4 +164,4 @@ export const rpcRouter = t.router({
   }),
 });
 
-export type RpcRouter = typeof rpcRouter;
+export type RPCRouter = typeof rpcRouter;

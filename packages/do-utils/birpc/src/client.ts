@@ -8,15 +8,22 @@ import {
   type inferProcedureInput,
   type inferProcedureOutput,
   type TRPCCombinedDataTransformer,
+  TRPCError,
+  getTRPCErrorFromUnknown,
 } from '@trpc/server';
 import {
   getTransformer,
   type TransformerOptions,
 } from '@trpc/client/unstable-internals';
-import type { RPCHandlerMap } from './common';
-import type { TRPCProcedureOptions } from '@trpc/client';
-
-interface ProcedureOptions<TProcedure extends AnyTRPCProcedure>
+import { TRPCClientError, type TRPCProcedureOptions } from '@trpc/client';
+import { parseResponseMessage, type ResponseMessage } from './parse';
+import type { OnClose, OnOpen, OnMessage } from './types';
+import type {
+  ErrorHandlerOptions,
+  inferRouterContext,
+} from '@trpc/server/unstable-core-do-not-import';
+import type { TRPCRequestMessage } from '@trpc/server/rpc';
+export interface ProcedureOptions<TProcedure extends AnyTRPCProcedure>
   extends TRPCProcedureOptions {
   path: string;
   method: TProcedure extends AnyTRPCQueryProcedure ? 'query' : 'mutation';
@@ -49,12 +56,38 @@ type DecorateRouterRecord<TRecord extends TRPCRouterRecord> = {
     : never;
 };
 
+type GetConnectionId = (ws: WebSocket) => string;
+
+interface WebSocketErrorHandlerOptions<TRouter extends AnyTRPCRouter> {
+  ws: WebSocket;
+  error: TRPCError;
+}
+
+export type CreateWebSocketClientOptions<TRouter extends AnyTRPCRouter> = {
+  getConnectionId: GetConnectionId;
+  onError?: (options: WebSocketErrorHandlerOptions<TRouter>) => void;
+} & TransformerOptions<TRouter['_def']['_config']>;
+
+type RPCHandlerMap = Map<string | number, PromiseWithResolvers<unknown>>;
+type WebSocketRPCHandlerMap = Map<string, RPCHandlerMap>;
+
 export interface WebSocketClient<TRouter extends AnyTRPCRouter> {
+  /**
+   * A proxy to create options for procedure calls.
+   */
   builder: DecorateRouterRecord<TRouter['_def']['record']>;
+
+  /**
+   * Calls a procedure on the the server without expecting a result.
+   */
   send(
     ws: WebSocket | WebSocket[],
     options: ProcedureOptions<AnyTRPCProcedure>,
   ): void;
+
+  /**
+   * Calls a procedure on the server and returns the result.
+   */
   call<TProcedure extends AnyTRPCProcedure>(
     ws: WebSocket,
     options: ProcedureOptions<TProcedure>,
@@ -63,129 +96,35 @@ export interface WebSocketClient<TRouter extends AnyTRPCRouter> {
     ws: WebSocket[],
     options: ProcedureOptions<TProcedure>,
   ): Promise<inferProcedureOutput<TProcedure>>[];
-}
 
-export type CreateWebSocketClientOptions<TRouter extends AnyTRPCRouter> =
-  TransformerOptions<TRouter['_def']['_config']>;
+  onOpen: OnOpen;
+  onClose: OnClose;
+  onMessage: OnMessage;
 
-interface CreateWebSocketManagerOptions {
-  url: string;
-  onConnect?: (ws: WebSocket, ev: Event) => void;
-  onDisconnect?: (ws: WebSocket, ev: Event) => void;
-  onMessage?: (ws: WebSocket, ev: MessageEvent) => void;
-  onError?: (ws: WebSocket, ev: Event) => void;
-}
-
-export interface WebSocketManager {
-  sendMessage: (message: string) => Promise<void>;
-  close: () => void;
-  getWebSocket: () => WebSocket;
-}
-
-const MAX_RECONNECT_ATTEMPTS = 5;
-const BASE_RECONNECT_DELAY = 1000;
-
-export function createPromise<T>() {
-  let resolve: (value: T) => void;
-  let reject: (reason?: any) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-
-  return {
-    promise,
-    resolve: (value: T) => resolve(value),
-    reject: (reason?: any) => reject(reason),
-  };
-}
-
-export function createWebSocketManager({
-  url,
-  onConnect,
-  onDisconnect,
-  onMessage,
-  onError,
-}: CreateWebSocketManagerOptions): WebSocketManager {
-  let isClosed = false;
-  const openPromises: ReturnType<typeof createPromise<void>>[] = [];
-  let reconnectAttempts = 0;
-
-  let webSocket = createWebSocket(url);
-
-  function createWebSocket(url: string) {
-    const ws = new WebSocket(url);
-
-    ws.onopen = (ev) => {
-      // reset reconnect attempts on successful connection
-      reconnectAttempts = 0;
-      onConnect?.(ws, ev);
-      for (const openPromise of openPromises) {
-        openPromise.resolve();
-      }
-    };
-
-    ws.onclose = (ev) => {
-      if (isClosed) return;
-      onDisconnect?.(ws, ev);
-
-      // try reconnect
-      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-        reconnectAttempts += 1;
-        const delay = BASE_RECONNECT_DELAY * 2 ** reconnectAttempts;
-        setTimeout(() => {
-          webSocket = createWebSocket(url);
-        }, delay);
-      } else {
-        throw new Error(
-          `Max reconnect attempts reached (${MAX_RECONNECT_ATTEMPTS}), closing connection`,
-        );
-      }
-    };
-
-    ws.onerror = (ev) => {
-      if (isClosed) return;
-      onError?.(ws, ev);
-    };
-
-    ws.onmessage = (ev) => {
-      onMessage?.(ws, ev);
-    };
-
-    return ws;
-  }
-
-  return {
-    async sendMessage(message) {
-      if (isClosed) throw new Error('WebSocket is closed');
-
-      const openPromise = createPromise<void>();
-      openPromises.push(openPromise);
-      await openPromise.promise;
-
-      webSocket.send(message);
-    },
-    close() {
-      console.log('closing');
-      isClosed = true;
-      for (const openPromise of openPromises) {
-        openPromise.reject(new Error('WebSocket is closed'));
-      }
-      webSocket.close();
-    },
-    getWebSocket() {
-      if (isClosed) throw new Error('WebSocket is closed');
-      return webSocket;
-    },
+  /**
+   * private properties used by internals
+   */
+  _internal: {
+    transformer: TRPCCombinedDataTransformer;
+    onMessage(ws: WebSocket, message: ResponseMessage): Promise<void>;
+    createMessage(
+      id: string | null,
+      options: ProcedureOptions<AnyTRPCProcedure>,
+    ): TRPCRequestMessage;
+    createCallResolver(
+      ws: WebSocket,
+      message: TRPCRequestMessage,
+    ): PromiseWithResolvers<unknown>;
   };
 }
 
 export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
-  getRPCHandlerMap: (ws: WebSocket) => RPCHandlerMap,
   options: CreateWebSocketClientOptions<TClientRouter>,
 ): WebSocketClient<TClientRouter> {
-  const { transformer } = options;
+  const { transformer, getConnectionId } = options;
   const dataTransformer = getTransformer(transformer);
+
+  const wsRPCHandlerMap: WebSocketRPCHandlerMap = new Map();
 
   const builder = createTRPCRecursiveProxy<
     DecorateRouterRecord<TClientRouter['_def']['record']>
@@ -209,80 +148,160 @@ export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
     return procedureOptions;
   });
 
-  function getMessage(
+  function createMessage(
     id: string | null,
-    transformer: TRPCCombinedDataTransformer,
     options: ProcedureOptions<AnyTRPCProcedure>,
-  ) {
+  ): TRPCRequestMessage {
     const { path, method, input } = options;
     return {
       id,
       jsonrpc: '2.0',
       method,
       params: {
-        input: transformer.input.serialize(input),
+        input: dataTransformer.input.serialize(input),
         path,
       },
     };
   }
 
+  function getRPCHandlerMap(connectionId: string) {
+    const rpcHandlerMap = wsRPCHandlerMap.get(connectionId);
+    if (!rpcHandlerMap)
+      throw new Error('WebSocket did not have an RPC handler map');
+    return rpcHandlerMap;
+  }
+
   return {
+    _internal: {
+      transformer: dataTransformer,
+      async onMessage(ws, message) {
+        if (!message.id) {
+          if (message.result.type === 'error') {
+            const error = getTRPCErrorFromUnknown(message.result.error);
+            options.onError?.({ ws, error });
+            return;
+          }
+          throw new Error('Message did not have an ID');
+        }
+        const connectionId = getConnectionId(ws);
+        const rpcHandlerMap = getRPCHandlerMap(connectionId);
+
+        const resolver = rpcHandlerMap.get(message.id);
+        if (!resolver) return;
+
+        rpcHandlerMap.delete(message.id);
+
+        if (message.result.type === 'error') {
+          resolver.reject(
+            TRPCClientError.from({
+              error: message.result.error,
+            }),
+          );
+        } else {
+          resolver.resolve(message.result.data);
+        }
+      },
+      createMessage,
+      createCallResolver(ws, message) {
+        if (!message.id) throw new Error('Message did not have an ID');
+
+        const connectionId = getConnectionId(ws);
+
+        const resolver =
+          Promise.withResolvers<inferProcedureOutput<AnyTRPCProcedure>>();
+        const rpcHandlerMap = getRPCHandlerMap(connectionId);
+        rpcHandlerMap.set(message.id, resolver);
+        return resolver;
+      },
+    },
     builder,
+    async onOpen(ws) {
+      const connectionId = getConnectionId(ws);
+      const rpcHandlerMap = wsRPCHandlerMap.get(connectionId);
+      if (rpcHandlerMap)
+        throw new Error(
+          'WebSocket already connected - Make sure to use a unique connection ID',
+        );
+      wsRPCHandlerMap.set(connectionId, new Map());
+    },
+
+    async onClose(ws) {
+      console.log('closing');
+      const connectionId = getConnectionId(ws);
+      const rpcHandlerMap = wsRPCHandlerMap.get(connectionId);
+      if (!rpcHandlerMap) return;
+
+      for (const { reject } of rpcHandlerMap.values()) {
+        reject(
+          new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Disconnected',
+          }),
+        );
+      }
+
+      wsRPCHandlerMap.delete(connectionId);
+    },
+    async onMessage(ws, message) {
+      const messageJSON = JSON.parse(message.toString());
+
+      if (Array.isArray(messageJSON)) {
+        await Promise.all(
+          messageJSON.map((message) => {
+            const parsedMessage = parseResponseMessage(
+              message,
+              dataTransformer,
+            );
+
+            if (!parsedMessage)
+              throw new Error('Received invalid response message');
+
+            return this._internal.onMessage(ws, parsedMessage);
+          }),
+        );
+      } else {
+        const parsedMessage = parseResponseMessage(
+          messageJSON,
+          dataTransformer,
+        );
+        if (!parsedMessage)
+          throw new Error('Received invalid response message');
+
+        await this._internal.onMessage(ws, parsedMessage);
+      }
+    },
     send(
       ws: WebSocket | WebSocket[],
       options: ProcedureOptions<AnyTRPCProcedure>,
     ) {
       const sockets = Array.isArray(ws) ? ws : [ws];
 
-      const message = getMessage(null, dataTransformer, options);
-      console.log('sent message', message);
-      const strMessage = JSON.stringify(message);
+      const message = createMessage(null, options);
+      const serializedMessage = JSON.stringify(message);
 
-      for (const socket of sockets) socket.send(strMessage);
+      for (const socket of sockets) socket.send(serializedMessage);
     },
     call<TProcedure extends AnyTRPCProcedure>(
       ws: WebSocket | WebSocket[],
       options: ProcedureOptions<TProcedure>,
     ): any {
       const id = crypto.randomUUID();
-
-      const message = getMessage(id, dataTransformer, options);
-      console.log('called with message', message);
-      const strMessage = JSON.stringify(message);
+      const message = createMessage(id, options);
+      const serializedMessage = JSON.stringify(message);
 
       if (Array.isArray(ws)) {
         const promises = ws.map((socket) => {
-          const rpcHandlerMap = getRPCHandlerMap(socket);
-
-          return new Promise<inferProcedureOutput<TProcedure>>(
-            (resolve, reject) => {
-              rpcHandlerMap.set(id, {
-                resolve,
-                reject,
-              });
-            },
-          );
+          const resolver = this._internal.createCallResolver(socket, message);
+          socket.send(serializedMessage);
+          return resolver.promise;
         });
 
-        for (const socket of ws) socket.send(strMessage);
-
-        return promises;
+        return Promise.all(promises);
       }
 
-      const rpcHandlerMap = getRPCHandlerMap(ws);
-
-      const promise = new Promise<inferProcedureOutput<TProcedure>>(
-        (resolve, reject) => {
-          rpcHandlerMap.set(id, {
-            resolve,
-            reject,
-          });
-        },
-      );
-
-      ws.send(strMessage);
-
-      return promise;
+      const resolver = this._internal.createCallResolver(ws, message);
+      ws.send(serializedMessage);
+      return resolver.promise;
     },
   };
 }

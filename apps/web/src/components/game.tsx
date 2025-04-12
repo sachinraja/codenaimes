@@ -66,12 +66,13 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
     }
 
     setWord('');
-    setIsLoadingGuesses(false);
 
     (async () => {
-      setIsSelecting(true);
-      await animateGuessedWords(guessedWords);
-      setIsSelecting(false);
+      if (guessedWords.length > 0) {
+        setIsSelecting(true);
+        await animateGuessedWords(guessedWords);
+        setIsSelecting(false);
+      }
 
       if (stateDiff?.state.stage === 'playing')
         setCurrentTeam(stateDiff.state.currentTeam);
@@ -111,6 +112,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
 
     setIsLoadingGuesses(true);
     await submitClue({ word, count: clueCount }, modelId);
+    setIsLoadingGuesses(false);
   };
 
   return (

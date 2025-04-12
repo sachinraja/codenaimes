@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Lobby } from './lobby';
 import Game from './game';
 import { TextScreen } from './text-screen';
-import { createWebSocketHandler } from '@do-utils/birpc/server';
-import type { RpcRouter } from '@codenaimes/live-tools/rpc';
-import { useRPCRouter } from '@codenaimes/client-router';
 import {
-  createWebSocketManager,
-  type WebSocketManager,
-} from '@do-utils/birpc/client';
+  createBirpc,
+  createWebSocketClient,
+  createWebSocketHandler,
+  type ManagedClient,
+} from '@do-utils/birpc';
+import type { RPCRouter } from '@codenaimes/live-tools/rpc';
+import { useRPCRouter } from '@codenaimes/client-router';
+import { toast } from 'sonner';
 
 interface GameControllerProps {
   roomId: string;
@@ -20,47 +22,33 @@ export function GameController({ roomId }: GameControllerProps) {
   const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}`;
 
   const { router, gameState, diffs, status, userState, users } = useRPCRouter();
-  const manager = useRef<WebSocketManager>(null);
-
-  const webSocketHandler = useMemo(
-    () =>
-      createWebSocketHandler({
-        createContext() {
-          return {};
-        },
-        getWebSocketConnectionId() {
-          return '1';
-        },
-        router,
-      }),
-    [router],
-  );
-
-  const client = useMemo(() => {
-    return webSocketHandler.createClient<RpcRouter>();
-  }, [webSocketHandler]);
+  const [c, setManagedClient] = useState<ManagedClient<RPCRouter> | null>(null);
 
   useEffect(() => {
-    manager.current = createWebSocketManager({
+    const handler = createWebSocketHandler({
+      createContext() {
+        return {};
+      },
+      router,
+    });
+
+    const client = createWebSocketClient<RPCRouter>({
+      getConnectionId: () => '1',
+    });
+
+    const { manager, managedClient } = createBirpc({
+      handler,
+      client,
       url: socketURL,
-      onMessage(ws, ev) {
-        const message = ev.data;
-        console.log('client received message', message);
-        webSocketHandler.webSocketMessage(ws, message);
-      },
-      onConnect(ws) {
-        (async () => {
-          await webSocketHandler.webSocketConnect(ws);
-          client.send(ws, client.builder.sync.queryOptions());
-        })();
-      },
-      onDisconnect(ws) {
-        webSocketHandler.webSocketClose(ws);
+      onOpen(ws) {
+        client.send(ws, client.builder.sync.queryOptions());
       },
     });
 
-    return () => manager.current?.close();
-  }, [client, webSocketHandler, socketURL]);
+    setManagedClient(managedClient);
+
+    return () => manager.close();
+  }, [router, socketURL]);
 
   return (
     <>
@@ -75,19 +63,11 @@ export function GameController({ roomId }: GameControllerProps) {
         <>
           {gameState.stage === 'lobby' && (
             <Lobby
-              startGame={async () => {
-                await client.call(
-                  // biome-ignore lint/style/noNonNullAssertion: <explanation>
-                  manager.current?.getWebSocket()!,
-                  client.builder.startGame.mutationOptions(),
-                );
+              startGame={() => {
+                c?.send(c.builder.startGame.mutationOptions());
               }}
-              switchTeam={async () => {
-                await client.call(
-                  // biome-ignore lint/style/noNonNullAssertion: <explanation>
-                  manager.current?.getWebSocket()!,
-                  client.builder.switchTeam.mutationOptions(),
-                );
+              switchTeam={() => {
+                c?.send(c.builder.switchTeam.mutationOptions());
               }}
               users={users}
             />
@@ -98,14 +78,16 @@ export function GameController({ roomId }: GameControllerProps) {
               userState={userState}
               gameState={gameState}
               submitClue={async (clue, modelId) => {
-                await client.call(
-                  // biome-ignore lint/style/noNonNullAssertion: <explanation>
-                  manager.current?.getWebSocket()!,
-                  client.builder.clue.mutationOptions({
-                    clue,
-                    modelId,
-                  }),
-                );
+                try {
+                  await c?.call(
+                    c.builder.clue.mutationOptions({
+                      clue,
+                      modelId,
+                    }),
+                  );
+                } catch {
+                  toast.error('Error submitting clue. Please try again.');
+                }
               }}
               diffs={diffs}
             />

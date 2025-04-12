@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "lib": ["es2021"],
-    "strict": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler"
-  }
-}
