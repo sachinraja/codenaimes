@@ -226,7 +226,6 @@ export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
     },
 
     async onClose(ws) {
-      console.log('closing');
       const connectionId = getConnectionId(ws);
       const rpcHandlerMap = wsRPCHandlerMap.get(connectionId);
       if (!rpcHandlerMap) return;

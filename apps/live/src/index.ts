@@ -116,7 +116,6 @@ export class GameDurableObject extends DurableObject<Env> {
     message: string | ArrayBuffer,
   ): Promise<void> {
     await this.resetTTL();
-    console.log('live received message', message);
 
     await this.webSocketHandler.onMessage(ws, message);
   }

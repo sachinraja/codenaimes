@@ -85,7 +85,8 @@ export function GameController({ roomId }: GameControllerProps) {
                       modelId,
                     }),
                   );
-                } catch {
+                } catch (e) {
+                  console.error(e);
                   toast.error('Error submitting clue. Please try again.');
                 }
               }}

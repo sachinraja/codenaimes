@@ -1,7 +1,7 @@
 import type { GameState, UserState } from '@codenaimes/game/types';
 import type { Diff } from '@codenaimes/game/diff';
 import { initTRPC } from '@trpc/server';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { castParse } from './cast';
 
 type Status = 'loading' | 'error' | 'ready';
@@ -11,9 +11,9 @@ export function useRPCRouter() {
   const [users, setUsers] = useState<UserState[]>([]);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [userState, setUserState] = useState<UserState | null>(null);
+  const userStateRef = useRef<UserState | null>(null);
   const [diffs, setDiffs] = useState<Diff[]>([]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const router = useMemo(() => {
     const t = initTRPC.create({ allowOutsideOfServer: true });
 
@@ -29,6 +29,7 @@ export function useRPCRouter() {
         .mutation(({ input }) => {
           setGameState(input.gameState);
           setUserState(input.userState);
+          userStateRef.current = input.userState;
           setUsers(input.users);
           setStatus('ready');
         }),
@@ -51,7 +52,11 @@ export function useRPCRouter() {
         )
         .mutation(({ input }) => {
           const { userState: changedUserState } = input;
-          if (userState && userState.id === changedUserState.id) {
+          if (
+            userStateRef.current &&
+            userStateRef.current.id === changedUserState.id
+          ) {
+            userStateRef.current = changedUserState;
             setUserState(changedUserState);
           }
 

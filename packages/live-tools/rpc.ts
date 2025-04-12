@@ -113,11 +113,19 @@ export const rpcRouter = t.router({
     )
     .mutation(async ({ ctx, input }) => {
       const gameState = await ctx.stateManager.get('gameState');
-      if (
-        gameState.stage !== 'playing' ||
-        ctx.user.team !== gameState.currentTeam
-      )
-        return;
+      if (gameState.stage !== 'playing') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invalid game state',
+        });
+      }
+
+      if (ctx.user.team !== gameState.currentTeam) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Not your turn',
+        });
+      }
 
       if (!isModelId(input.modelId)) {
         throw new TRPCError({
