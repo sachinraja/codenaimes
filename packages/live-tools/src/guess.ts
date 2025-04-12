@@ -20,10 +20,12 @@ const modelIdToModelMap: Record<ModelId, () => LanguageModelV1> = {
     createGoogleGenerativeAI({
       apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
     })('gemini-2.0-flash-001'),
+
   'gpt-4o-mini': () =>
     createOpenAI({
       apiKey: env.OPENAI_API_KEY,
     })('gpt-4o-mini'),
+
   'llama-3.3-70b-instruct': () =>
     createWorkersAI({
       binding: env.AI,
