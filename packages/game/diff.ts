@@ -1,4 +1,4 @@
-import type { Clue, GameState, Team } from '@codenaimes/game/types';
+import type { Clue, GameState, Team } from './types';
 
 interface BaseDiff {
   type: string;

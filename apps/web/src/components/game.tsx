@@ -20,7 +20,7 @@ import type {
   Team,
   UserState,
 } from '@codenaimes/game/types';
-import type { Diff, StateDiff } from '@codenaimes/ws-interface/diff';
+import type { Diff, StateDiff } from '@codenaimes/game/diff';
 import { TeamDisplay } from './team-display';
 import { type ModelId, models } from '@codenaimes/game/model';
 import { LoaderCircleIcon } from 'lucide-react';
@@ -28,7 +28,7 @@ import { LoaderCircleIcon } from 'lucide-react';
 type GameProps = {
   userState: UserState;
   gameState: PlayingGameState | CompleteGameState;
-  submitClue: (clue: Clue, modelId: ModelId) => void;
+  submitClue: (clue: Clue, modelId: ModelId) => Promise<void>;
   diffs: Diff[];
 };
 
@@ -110,7 +110,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
     if (!word.trim()) return;
 
     setIsLoadingGuesses(true);
-    submitClue({ word, count: clueCount }, modelId);
+    await submitClue({ word, count: clueCount }, modelId);
   };
 
   return (

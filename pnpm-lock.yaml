@@ -23,15 +23,15 @@ importers:
       '@ai-sdk/openai':
         specifier: ^1.3.1
         version: 1.3.1(zod@3.24.2)
+      '@codenaimes/client-router':
+        specifier: workspace:*
+        version: link:../../packages/client-router
       '@codenaimes/game':
         specifier: workspace:*
         version: link:../../packages/game
       '@codenaimes/live-tools':
         specifier: workspace:*
         version: link:../../packages/live-tools
-      '@codenaimes/ws-interface':
-        specifier: workspace:*
-        version: link:../../packages/ws-interface
       '@do-utils/birpc':
         specifier: workspace:*
         version: link:../../packages/do-utils/birpc
@@ -69,15 +69,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@codenaimes/client-router':
+        specifier: workspace:*
+        version: link:../../packages/client-router
       '@codenaimes/game':
         specifier: workspace:*
         version: link:../../packages/game
       '@codenaimes/live-tools':
         specifier: workspace:*
         version: link:../../packages/live-tools
-      '@codenaimes/ws-interface':
-        specifier: workspace:*
-        version: link:../../packages/ws-interface
       '@do-utils/birpc':
         specifier: workspace:*
         version: link:../../packages/do-utils/birpc
@@ -254,6 +254,25 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/client-router:
+    dependencies:
+      '@codenaimes/game':
+        specifier: workspace:*
+        version: link:../game
+      react:
+        specifier: ^19
+        version: 19.0.0
+      typescript:
+        specifier: ^5.8.2
+        version: 5.8.2
+    devDependencies:
+      '@trpc/server':
+        specifier: ^11.0.2
+        version: 11.0.2(typescript@5.8.2)
+      '@types/react':
+        specifier: ^19.0.12
+        version: 19.0.12
+
   packages/do-utils/birpc:
     devDependencies:
       '@trpc/client':
@@ -292,12 +311,15 @@ importers:
       '@ai-sdk/openai':
         specifier: ^1.3.1
         version: 1.3.1(zod@3.24.2)
+      '@codenaimes/client-router':
+        specifier: workspace:*
+        version: link:../client-router
       '@codenaimes/game':
         specifier: workspace:*
         version: link:../game
-      '@codenaimes/ws-interface':
+      '@do-utils/birpc':
         specifier: workspace:*
-        version: link:../ws-interface
+        version: link:../do-utils/birpc
       '@do-utils/state-manager':
         specifier: workspace:*
         version: link:../do-utils/state-manager
@@ -313,16 +335,6 @@ importers:
       zod:
         specifier: ^3.24.2
         version: 3.24.2
-    devDependencies:
-      typescript:
-        specifier: ^5.8.2
-        version: 5.8.2
-
-  packages/ws-interface:
-    dependencies:
-      '@codenaimes/game':
-        specifier: workspace:*
-        version: link:../game
     devDependencies:
       typescript:
         specifier: ^5.8.2

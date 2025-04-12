@@ -68,6 +68,118 @@ export interface WebSocketClient<TRouter extends AnyTRPCRouter> {
 export type CreateWebSocketClientOptions<TRouter extends AnyTRPCRouter> =
   TransformerOptions<TRouter['_def']['_config']>;
 
+interface CreateWebSocketManagerOptions {
+  url: string;
+  onConnect?: (ws: WebSocket, ev: Event) => void;
+  onDisconnect?: (ws: WebSocket, ev: Event) => void;
+  onMessage?: (ws: WebSocket, ev: MessageEvent) => void;
+  onError?: (ws: WebSocket, ev: Event) => void;
+}
+
+export interface WebSocketManager {
+  sendMessage: (message: string) => Promise<void>;
+  close: () => void;
+  getWebSocket: () => WebSocket;
+}
+
+const MAX_RECONNECT_ATTEMPTS = 5;
+const BASE_RECONNECT_DELAY = 1000;
+
+export function createPromise<T>() {
+  let resolve: (value: T) => void;
+  let reject: (reason?: any) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return {
+    promise,
+    resolve: (value: T) => resolve(value),
+    reject: (reason?: any) => reject(reason),
+  };
+}
+
+export function createWebSocketManager({
+  url,
+  onConnect,
+  onDisconnect,
+  onMessage,
+  onError,
+}: CreateWebSocketManagerOptions): WebSocketManager {
+  let isClosed = false;
+  const openPromises: ReturnType<typeof createPromise<void>>[] = [];
+  let reconnectAttempts = 0;
+
+  let webSocket = createWebSocket(url);
+
+  function createWebSocket(url: string) {
+    const ws = new WebSocket(url);
+
+    ws.onopen = (ev) => {
+      // reset reconnect attempts on successful connection
+      reconnectAttempts = 0;
+      onConnect?.(ws, ev);
+      for (const openPromise of openPromises) {
+        openPromise.resolve();
+      }
+    };
+
+    ws.onclose = (ev) => {
+      if (isClosed) return;
+      onDisconnect?.(ws, ev);
+
+      // try reconnect
+      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttempts += 1;
+        const delay = BASE_RECONNECT_DELAY * 2 ** reconnectAttempts;
+        setTimeout(() => {
+          webSocket = createWebSocket(url);
+        }, delay);
+      } else {
+        throw new Error(
+          `Max reconnect attempts reached (${MAX_RECONNECT_ATTEMPTS}), closing connection`,
+        );
+      }
+    };
+
+    ws.onerror = (ev) => {
+      if (isClosed) return;
+      onError?.(ws, ev);
+    };
+
+    ws.onmessage = (ev) => {
+      onMessage?.(ws, ev);
+    };
+
+    return ws;
+  }
+
+  return {
+    async sendMessage(message) {
+      if (isClosed) throw new Error('WebSocket is closed');
+
+      const openPromise = createPromise<void>();
+      openPromises.push(openPromise);
+      await openPromise.promise;
+
+      webSocket.send(message);
+    },
+    close() {
+      console.log('closing');
+      isClosed = true;
+      for (const openPromise of openPromises) {
+        openPromise.reject(new Error('WebSocket is closed'));
+      }
+      webSocket.close();
+    },
+    getWebSocket() {
+      if (isClosed) throw new Error('WebSocket is closed');
+      return webSocket;
+    },
+  };
+}
+
 export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
   getRPCHandlerMap: (ws: WebSocket) => RPCHandlerMap,
   options: CreateWebSocketClientOptions<TClientRouter>,
@@ -116,7 +228,6 @@ export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
 
   return {
     builder,
-
     send(
       ws: WebSocket | WebSocket[],
       options: ProcedureOptions<AnyTRPCProcedure>,
@@ -124,11 +235,11 @@ export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
       const sockets = Array.isArray(ws) ? ws : [ws];
 
       const message = getMessage(null, dataTransformer, options);
+      console.log('sent message', message);
       const strMessage = JSON.stringify(message);
 
       for (const socket of sockets) socket.send(strMessage);
     },
-
     call<TProcedure extends AnyTRPCProcedure>(
       ws: WebSocket | WebSocket[],
       options: ProcedureOptions<TProcedure>,
@@ -136,6 +247,7 @@ export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
       const id = crypto.randomUUID();
 
       const message = getMessage(id, dataTransformer, options);
+      console.log('called with message', message);
       const strMessage = JSON.stringify(message);
 
       if (Array.isArray(ws)) {
@@ -157,10 +269,10 @@ export function createWebSocketClient<TClientRouter extends AnyTRPCRouter>(
         return promises;
       }
 
+      const rpcHandlerMap = getRPCHandlerMap(ws);
+
       const promise = new Promise<inferProcedureOutput<TProcedure>>(
         (resolve, reject) => {
-          const rpcHandlerMap = getRPCHandlerMap(ws);
-
           rpcHandlerMap.set(id, {
             resolve,
             reject,

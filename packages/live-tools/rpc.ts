@@ -3,7 +3,6 @@ import { generateRandomBoard } from '@codenaimes/game/board';
 import { canGameStart } from '@codenaimes/game/utils';
 import { isWSAttachment } from './utils';
 import type { GameState } from '@codenaimes/game/types';
-import type { ClientMessage } from '@codenaimes/ws-interface';
 import { generateGuesses } from './guess';
 import { z } from 'zod';
 import { type ModelId, models } from '@codenaimes/game/model';
@@ -12,22 +11,17 @@ import {
   type GameStateManager,
   serverToClientUserState,
 } from './state';
+import type { WebSocketClient } from '@do-utils/birpc/client';
+import type { RpcClientRouter } from '@codenaimes/client-router';
 
 export interface RpcContext {
   stateManager: GameStateManager;
   ws: WebSocket;
   doState: DurableObjectState;
+  client: WebSocketClient<RpcClientRouter>;
 }
 
 const t = initTRPC.context<RpcContext>().create();
-
-function send(ws: WebSocket | WebSocket[], message: ClientMessage) {
-  const serializedMessage = JSON.stringify(message);
-  const clients = Array.isArray(ws) ? ws : [ws];
-  for (const client of clients) {
-    client.send(serializedMessage);
-  }
-}
 
 const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   const attachment = ctx.ws.deserializeAttachment();
@@ -80,27 +74,31 @@ export const rpcRouter = t.router({
 
     await ctx.stateManager.put('gameState', startState);
 
-    send(ctx.doState.getWebSockets(), {
-      type: 'diff',
-      diffs: [
-        {
-          type: 'state',
-          state: startState,
-        },
-      ],
-    });
+    ctx.client.send(
+      ctx.doState.getWebSockets(),
+      ctx.client.builder.createDiffs.mutationOptions({
+        diffs: [
+          {
+            type: 'state',
+            state: startState,
+          },
+        ],
+      }),
+    );
   }),
 
   sync: protectedProcedure.query(async ({ ctx }) => {
     const gameState = await ctx.stateManager.get('gameState');
     const userSessions = await ctx.stateManager.get('userSessions');
 
-    send(ctx.ws, {
-      type: 'sync',
-      gameState,
-      userState: serverToClientUserState(ctx.user),
-      users: Array.from(userSessions.values()).map(serverToClientUserState),
-    });
+    ctx.client.send(
+      ctx.ws,
+      ctx.client.builder.sync.mutationOptions({
+        gameState,
+        userState: serverToClientUserState(ctx.user),
+        users: Array.from(userSessions.values()).map(serverToClientUserState),
+      }),
+    );
   }),
 
   clue: protectedProcedure
@@ -115,6 +113,7 @@ export const rpcRouter = t.router({
     )
     .mutation(async ({ ctx, input }) => {
       const gameState = await ctx.stateManager.get('gameState');
+      console.log('clue', gameState);
       if (
         gameState.stage !== 'playing' ||
         ctx.user.team !== gameState.currentTeam
@@ -135,10 +134,12 @@ export const rpcRouter = t.router({
       );
       await ctx.stateManager.put('gameState', newGameState);
 
-      send(ctx.doState.getWebSockets(), {
-        type: 'diff',
-        diffs: diffs,
-      });
+      ctx.client.send(
+        ctx.doState.getWebSockets(),
+        ctx.client.builder.createDiffs.mutationOptions({
+          diffs,
+        }),
+      );
     }),
 
   switchTeam: protectedProcedure.mutation(async ({ ctx }) => {
@@ -155,10 +156,12 @@ export const rpcRouter = t.router({
     userSessions.set(ctx.sessionId, newUser);
     await ctx.stateManager.put('userSessions', userSessions);
 
-    send(ctx.doState.getWebSockets(), {
-      type: 'player-state-change',
-      userState: serverToClientUserState(newUser),
-    });
+    ctx.client.send(
+      ctx.doState.getWebSockets(),
+      ctx.client.builder.changePlayerState.mutationOptions({
+        userState: serverToClientUserState(newUser),
+      }),
+    );
   }),
 });
 

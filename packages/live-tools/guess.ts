@@ -6,7 +6,7 @@ import type {
   GameState,
   PlayingGameState,
 } from '@codenaimes/game/types';
-import type { Diff } from '@codenaimes/ws-interface/diff';
+import type { Diff } from '@codenaimes/game/diff';
 import { getOtherTeam } from '@codenaimes/game/utils';
 import { env } from 'cloudflare:workers';
 import type { ModelId } from '@codenaimes/game/model';

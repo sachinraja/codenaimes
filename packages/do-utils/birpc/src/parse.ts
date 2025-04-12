@@ -6,7 +6,6 @@ import {
   isObject,
   procedureTypes,
 } from '@trpc/server/unstable-core-do-not-import';
-import type { TRPCRequestMessage, TRPCResponseMessage } from '@trpc/server/rpc';
 
 /* istanbul ignore next -- @preserve */
 function assertIsObject(obj: unknown): asserts obj is Record<string, unknown> {
@@ -86,9 +85,9 @@ export function parseMessage(
   const { id, jsonrpc, method, params } = obj;
   assertIsRequestId(id);
   assertIsJSONRPC2OrUndefined(jsonrpc);
-  assertIsProcedureType(method);
 
   if ('method' in obj) {
+    assertIsProcedureType(method);
     assertIsObject(params);
     const { input: rawInput, path } = params;
 

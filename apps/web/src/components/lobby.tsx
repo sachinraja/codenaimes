@@ -7,8 +7,8 @@ import { CheckIcon, ClockIcon } from 'lucide-react';
 import { canGameStart } from '@codenaimes/game/utils';
 
 export interface LobbyProps {
-  startGame: () => void;
-  switchTeam: () => void;
+  startGame: () => Promise<void>;
+  switchTeam: () => Promise<void>;
   users: UserState[];
 }
 

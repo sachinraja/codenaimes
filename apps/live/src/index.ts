@@ -1,6 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
 import type { GameState, Team } from '@codenaimes/game/types';
-import type { ClientMessage } from '@codenaimes/ws-interface';
 import { getSessionId } from './utils/user';
 import { baseRouter } from './routers/base';
 import { type StateManager, createStateManager } from '@do-utils/state-manager';
@@ -8,13 +7,15 @@ import {
   createWebSocketHandler,
   type WebSocketHandler,
 } from '@do-utils/birpc/server';
-import { rpcRouter } from './rpc';
+import { rpcRouter } from '@codenaimes/live-tools/rpc';
 import type { WSAttachment } from '@codenaimes/live-tools/utils';
 import {
   serverToClientUserState,
   type ServerUserState,
   type UserSessionMap,
 } from '@codenaimes/live-tools/state';
+import type { WebSocketClient } from '@do-utils/birpc/client';
+import type { RpcClientRouter } from '@codenaimes/client-router';
 
 const OBJECT_TTL_MS = 5 * 60 * 1000;
 
@@ -25,6 +26,7 @@ export class GameDurableObject extends DurableObject<Env> {
     created: boolean;
   }>;
   webSocketHandler: WebSocketHandler;
+  client: WebSocketClient<RpcClientRouter>;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -40,9 +42,11 @@ export class GameDurableObject extends DurableObject<Env> {
           ws,
           doState: this.ctx,
           stateManager: this.stateManager,
+          client: this.client,
         };
       },
     });
+    this.client = this.webSocketHandler.createClient<RpcClientRouter>();
 
     this.ctx.blockConcurrencyWhile(async () => {
       this.stateManager = createStateManager(ctx.storage, {
@@ -89,10 +93,12 @@ export class GameDurableObject extends DurableObject<Env> {
     const attachment: WSAttachment = { sessionId };
     server.serializeAttachment(attachment);
 
-    this.sendToAllClients({
-      type: 'player-state-change',
-      userState: serverToClientUserState(newUser),
-    });
+    this.client.send(
+      this.ctx.getWebSockets(),
+      this.client.builder.changePlayerState.mutationOptions({
+        userState: serverToClientUserState(newUser),
+      }),
+    );
 
     return res;
   }
@@ -106,6 +112,7 @@ export class GameDurableObject extends DurableObject<Env> {
     message: string | ArrayBuffer,
   ): Promise<void> {
     await this.resetTTL();
+    console.log('live received message', message);
 
     await this.webSocketHandler.webSocketMessage(ws, message);
   }
@@ -123,21 +130,12 @@ export class GameDurableObject extends DurableObject<Env> {
     userSessions.set(attachment.sessionId, newUser);
     await this.stateManager.put('userSessions', userSessions);
 
-    this.sendToAllClients({
-      type: 'player-state-change',
-      userState: serverToClientUserState(newUser),
-    });
-  }
-
-  sendToClient(ws: WebSocket, message: ClientMessage) {
-    const messageString = JSON.stringify(message);
-    ws.send(messageString);
-  }
-
-  sendToAllClients(message: ClientMessage) {
-    const messageString = JSON.stringify(message);
-    for (const clientWS of this.ctx.getWebSockets())
-      clientWS.send(messageString);
+    this.client.send(
+      this.ctx.getWebSockets(),
+      this.client.builder.changePlayerState.mutationOptions({
+        userState: serverToClientUserState(newUser),
+      }),
+    );
   }
 
   async resetTTL() {
@@ -165,10 +163,12 @@ export class GameDurableObject extends DurableObject<Env> {
     userSessions.set(sessionId, user);
     await this.stateManager.put('userSessions', userSessions);
 
-    this.sendToAllClients({
-      type: 'player-state-change',
-      userState: serverToClientUserState(user),
-    });
+    this.client.send(
+      this.ctx.getWebSockets(),
+      this.client.builder.changePlayerState.mutationOptions({
+        userState: serverToClientUserState(user),
+      }),
+    );
 
     return sessionId;
   }
