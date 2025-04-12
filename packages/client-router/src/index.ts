@@ -74,6 +74,7 @@ export function useRPCRouter() {
   return {
     router,
     status,
+    setStatus,
     gameState,
     userState,
     users,

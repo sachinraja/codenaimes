@@ -21,7 +21,8 @@ interface GameControllerProps {
 export function GameController({ roomId }: GameControllerProps) {
   const socketURL = `${process.env.NEXT_PUBLIC_WORKERS_WS_URL}/room/${roomId}`;
 
-  const { router, gameState, diffs, status, userState, users } = useRPCRouter();
+  const { router, gameState, diffs, status, setStatus, userState, users } =
+    useRPCRouter();
   const [c, setManagedClient] = useState<ManagedClient<RPCRouter> | null>(null);
 
   useEffect(() => {
@@ -41,14 +42,18 @@ export function GameController({ roomId }: GameControllerProps) {
       client,
       url: socketURL,
       onOpen(ws) {
+        setStatus('loading');
         client.send(ws, client.builder.sync.queryOptions());
+      },
+      onError() {
+        setStatus('error');
       },
     });
 
     setManagedClient(managedClient);
 
     return () => manager.close();
-  }, [router, socketURL]);
+  }, [router, socketURL, setStatus]);
 
   return (
     <>
