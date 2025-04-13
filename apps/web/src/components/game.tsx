@@ -213,7 +213,9 @@ function Game({ userState, gameState, submitClue, diffs, users }: GameProps) {
             )}
           </Button>
         </form>
+      </div>
 
+      <div className="mt-4">
         <Board board={gameState.board} clientBoard={clientBoard} />
       </div>
     </div>
