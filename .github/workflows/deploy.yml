@@ -28,6 +28,7 @@ jobs:
             GOOGLE_GENERATIVE_AI_API_KEY
             OPENAI_API_KEY
             ANTHROPIC_API_KEY
+            XAI_API_KEY
           workingDirectory: apps/live
           packageManager: pnpm
         env:
