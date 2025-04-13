@@ -86,9 +86,10 @@ export function GameController({ roomId, sessionId }: GameControllerProps) {
               submitClue={async (input) => {
                 try {
                   await c?.call(c.builder.giveClue.mutationOptions(input));
-                } catch (e) {
-                  console.error(e);
-                  toast.error('Error submitting clue. Please try again.');
+                } catch {
+                  toast.error(
+                    'Error submitting clue. Please try again or try with a different model.',
+                  );
                 }
               }}
               diffs={diffs}
