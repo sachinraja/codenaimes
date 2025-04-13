@@ -20,6 +20,10 @@ export const models = [
     name: 'Claude 3.5 Haiku',
     id: 'claude-3.5-haiku',
   },
+  {
+    name: 'Grok 3 mini',
+    id: 'grok-3-mini',
+  },
 ] as const satisfies Model[];
 
 export type ModelId = (typeof models)[number]['id'];

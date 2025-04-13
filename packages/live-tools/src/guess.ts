@@ -14,6 +14,7 @@ import { createWorkersAI } from 'workers-ai-provider';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createXai } from '@ai-sdk/xai';
 
 const modelIdToModelMap: Record<ModelId, () => LanguageModelV1> = {
   'gemini-flash-2.0': () =>
@@ -35,6 +36,11 @@ const modelIdToModelMap: Record<ModelId, () => LanguageModelV1> = {
     createAnthropic({
       apiKey: env.ANTHROPIC_API_KEY,
     })('claude-3-5-haiku-latest'),
+
+  'grok-3-mini': () =>
+    createXai({
+      apiKey: env.XAI_API_KEY,
+    })('grok-3-mini-beta'),
 };
 
 export async function generateGuesses(
