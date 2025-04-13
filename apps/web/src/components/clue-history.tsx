@@ -27,7 +27,7 @@ function ClueCard({
 
 export function ClueHistory({ clues, users }: ClueHistoryProps) {
   return (
-    <ul className="flex space-x-2 text-sm">
+    <ul className="flex gap-2 text-sm flex-wrap">
       {clues.map((clue, i) => (
         <li
           className={cn('p-1 rounded', {
@@ -37,9 +37,7 @@ export function ClueHistory({ clues, users }: ClueHistoryProps) {
           // biome-ignore lint/suspicious/noArrayIndexKey: clues are always in the same order
           key={i}
         >
-          <div className="flex space-x-2 items-center">
-            <ClueCard clue={clue} users={users} />
-          </div>
+          <ClueCard clue={clue} users={users} />
         </li>
       ))}
     </ul>
