@@ -34,7 +34,7 @@ export function ClueHistory({ clues, users }: ClueHistoryProps) {
             'bg-red-500/40 text-red-500': clue.team === 'red',
             'bg-blue-500/40 text-blue-500': clue.team === 'blue',
           })}
-          // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+          // biome-ignore lint/suspicious/noArrayIndexKey: clues are always in the same order
           key={i}
         >
           <div className="flex space-x-2 items-center">

@@ -10,17 +10,20 @@ import { PlayerAvatar } from './player-avatar';
 
 export function JoinRoomForm({ roomId }: { roomId: string }) {
   const [username, setUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleJoinRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      setIsLoading(true);
       await joinRoom(roomId, username);
       router.push(`/room/${roomId}`);
     } catch {
       toast.error('Failed to join room');
     }
+    setIsLoading(false);
   };
 
   return (
@@ -37,7 +40,7 @@ export function JoinRoomForm({ roomId }: { roomId: string }) {
       <Button
         type="submit"
         className="text-lg cursor-pointer"
-        disabled={!username.trim()}
+        disabled={!username.trim() || isLoading}
       >
         join room
       </Button>

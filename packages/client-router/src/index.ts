@@ -61,9 +61,14 @@ export function useRPCRouter() {
           }
 
           setUsers((prevUsers) => {
-            const newUsers = prevUsers.filter(
-              (user) => user.id !== changedUserState.id,
+            const newUsers = [...prevUsers];
+            const changedUserIndex = newUsers.findIndex(
+              (user) => user.id === changedUserState.id,
             );
+            if (changedUserIndex !== -1) {
+              newUsers[changedUserIndex] = changedUserState;
+              return newUsers;
+            }
             newUsers.push(changedUserState);
             return newUsers;
           });

@@ -10,17 +10,20 @@ import { PlayerAvatar } from './player-avatar';
 
 export function CreateRoomForm() {
   const [username, setUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      setIsLoading(true);
       const roomId = await createRoom(username);
       router.push(`/room/${roomId}`);
     } catch {
       toast.error('Failed to create room');
     }
+    setIsLoading(false);
   };
 
   return (
@@ -41,7 +44,7 @@ export function CreateRoomForm() {
         <Button
           type="submit"
           className="text-lg cursor-pointer"
-          disabled={!username.trim()}
+          disabled={!username.trim() || isLoading}
         >
           create room
         </Button>
