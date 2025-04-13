@@ -44,11 +44,11 @@ export function Lobby({ startGame, users, switchTeam }: LobbyProps) {
           <li
             key={user.id}
             className={cn(
-              'flex flex-row items-center space-x-2 p-2 rounded',
+              'flex flex-row items-center space-x-2 p-2 rounded text-lg',
               getUserClassNames(user),
             )}
           >
-            <PlayerAvatar username={user.username} size={20} />
+            <PlayerAvatar username={user.username} size={24} />
             <span>{user.username}</span>
           </li>
         ))}
