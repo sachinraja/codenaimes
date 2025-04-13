@@ -58,9 +58,13 @@ function Game({ userState, gameState, submitClue, diffs, users }: GameProps) {
 
     let stateDiff: StateDiff | undefined;
     for (const diff of diffs) {
-      if (diff.type === 'clue') setClues((clues) => [...clues, diff.clue]);
       if (diff.type === 'selection') guessedWords.push(diff.index);
-      if (diff.type === 'state') stateDiff = diff;
+      if (diff.type === 'state') {
+        stateDiff = diff;
+        if (diff.state.stage !== 'lobby') {
+          setClues(diff.state.clues);
+        }
+      }
     }
 
     setWord('');

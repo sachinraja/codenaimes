@@ -7,23 +7,27 @@ import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { joinRoom } from '@/app/actions';
 import { PlayerAvatar } from './player-avatar';
+import { useMutation } from '@/lib/use-mutation';
 
 export function JoinRoomForm({ roomId }: { roomId: string }) {
   const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { mutate: joinMutate, isLoading } = useMutation(
+    async () => {
+      await joinRoom(roomId, username);
+      router.push(`/room/${roomId}`);
+    },
+    {
+      onError() {
+        toast.error('Failed to join room');
+      },
+    },
+  );
 
   const handleJoinRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      setIsLoading(true);
-      await joinRoom(roomId, username);
-      router.push(`/room/${roomId}`);
-    } catch {
-      toast.error('Failed to join room');
-    }
-    setIsLoading(false);
+    await joinMutate();
   };
 
   return (

@@ -69,11 +69,11 @@ export function GameController({ roomId, sessionId }: GameControllerProps) {
         <>
           {gameState.stage === 'lobby' && (
             <Lobby
-              startGame={() => {
-                c?.send(c.builder.startGame.mutationOptions());
+              startGame={async () => {
+                await c?.call(c.builder.startGame.mutationOptions());
               }}
-              switchTeam={() => {
-                c?.send(c.builder.switchTeam.mutationOptions());
+              switchTeam={async () => {
+                await c?.call(c.builder.switchTeam.mutationOptions());
               }}
               users={users}
             />

@@ -7,23 +7,27 @@ import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { createRoom } from '@/app/actions';
 import { PlayerAvatar } from './player-avatar';
+import { useMutation } from '@/lib/use-mutation';
 
 export function CreateRoomForm() {
   const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { mutate: createMutate, isLoading } = useMutation(
+    async () => {
+      const roomId = await createRoom(username);
+      router.push(`/room/${roomId}`);
+    },
+    {
+      onError() {
+        toast.error('Failed to create room');
+      },
+    },
+  );
 
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      setIsLoading(true);
-      const roomId = await createRoom(username);
-      router.push(`/room/${roomId}`);
-    } catch {
-      toast.error('Failed to create room');
-    }
-    setIsLoading(false);
+    await createMutate();
   };
 
   return (

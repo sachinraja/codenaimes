@@ -70,13 +70,7 @@ export async function generateGuesses(
   });
   const words = object.words;
 
-  const diffs: Diff[] = [
-    {
-      type: 'clue',
-      team: gameState.currentTeam,
-      clue,
-    },
-  ];
+  const diffs: Diff[] = [];
   const newBoard: Board = [...gameState.board];
   const otherTeam = getOtherTeam(gameState.currentTeam);
   let newGameState: GameState | null = null;

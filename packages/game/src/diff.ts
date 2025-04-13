@@ -1,13 +1,7 @@
-import type { Clue, GameState, Team } from './types';
+import type { GameState } from './types';
 
 interface BaseDiff {
   type: string;
-}
-
-export interface ClueDiff extends BaseDiff {
-  type: 'clue';
-  team: Team;
-  clue: Clue;
 }
 
 export interface SelectionDiff extends BaseDiff {
@@ -20,4 +14,4 @@ export interface StateDiff extends BaseDiff {
   state: GameState;
 }
 
-export type Diff = SelectionDiff | StateDiff | ClueDiff;
+export type Diff = SelectionDiff | StateDiff;

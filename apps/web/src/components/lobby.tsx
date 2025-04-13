@@ -2,18 +2,37 @@
 
 import { cn, getUserClassNames } from '@/lib/utils';
 import { Button } from './ui/button';
-import { teams, type UserState, type Team } from '@codenaimes/game/types';
-import { CheckIcon, ClockIcon } from 'lucide-react';
+import type { UserState } from '@codenaimes/game/types';
 import { canGameStart } from '@codenaimes/game/utils';
 import { PlayerAvatar } from './player-avatar';
+import { useMutation } from '@/lib/use-mutation';
+import { toast } from 'sonner';
 
 export interface LobbyProps {
-  startGame: () => void;
-  switchTeam: () => void;
+  startGame: () => Promise<void>;
+  switchTeam: () => Promise<void>;
   users: UserState[];
 }
 
 export function Lobby({ startGame, users, switchTeam }: LobbyProps) {
+  const { mutate: startMutate, isLoading: isStartLoading } = useMutation(
+    startGame,
+    {
+      onError(error) {
+        toast.error('Failed to start game');
+      },
+    },
+  );
+
+  const { mutate: switchMutate, isLoading: isSwitchLoading } = useMutation(
+    switchTeam,
+    {
+      onError(error) {
+        toast.error('Failed to switch teams');
+      },
+    },
+  );
+
   return (
     <div className="flex flex-col items-center justify-center m-8 space-y-4">
       <h1 className="text-lg font-bold">lobby</h1>
@@ -27,13 +46,17 @@ export function Lobby({ startGame, users, switchTeam }: LobbyProps) {
         >
           copy join link
         </Button>
-        <Button className="cursor-pointer" onClick={switchTeam}>
+        <Button
+          className="cursor-pointer"
+          onClick={switchMutate}
+          disabled={isSwitchLoading}
+        >
           switch teams
         </Button>
         <Button
           className="cursor-pointer"
-          disabled={!canGameStart(users)}
-          onClick={startGame}
+          onClick={startMutate}
+          disabled={!canGameStart(users) || isStartLoading}
         >
           start game
         </Button>
