@@ -1,4 +1,4 @@
-import type { GameState, Team, GameWord } from './types';
+import type { GameWord } from './types';
 import words from './words.json';
 
 export function generateRandomBoard() {

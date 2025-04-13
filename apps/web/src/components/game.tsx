@@ -14,25 +14,28 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type {
-  Clue,
   CompleteGameState,
   PlayingGameState,
   Team,
   UserState,
 } from '@codenaimes/game/types';
 import type { Diff, StateDiff } from '@codenaimes/game/diff';
-import { TeamDisplay } from './team-display';
 import { type ModelId, models } from '@codenaimes/game/model';
 import { LoaderCircleIcon } from 'lucide-react';
-
+import type { inferProcedureInput } from '@trpc/server';
+import type { RPCRouter } from '@codenaimes/live-tools/rpc';
+import { ClueHistory } from './clue-history';
 type GameProps = {
   userState: UserState;
   gameState: PlayingGameState | CompleteGameState;
-  submitClue: (clue: Clue, modelId: ModelId) => Promise<void>;
+  submitClue: (
+    input: inferProcedureInput<RPCRouter['giveClue']>,
+  ) => Promise<void>;
   diffs: Diff[];
+  users: UserState[];
 };
 
-function Game({ userState, gameState, submitClue, diffs }: GameProps) {
+function Game({ userState, gameState, submitClue, diffs, users }: GameProps) {
   const [clientBoard, setClientBoard] = useState<ClientWord[]>(
     gameState.board.map((word) => ({
       visibleState: word.revealed ? 'revealed' : 'hidden',
@@ -55,12 +58,7 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
 
     let stateDiff: StateDiff | undefined;
     for (const diff of diffs) {
-      if (diff.type === 'clue')
-        setClues((clues) => ({
-          ...clues,
-          [diff.team]: [...clues[diff.team], diff.clue],
-        }));
-
+      if (diff.type === 'clue') setClues((clues) => [...clues, diff.clue]);
       if (diff.type === 'selection') guessedWords.push(diff.index);
       if (diff.type === 'state') stateDiff = diff;
     }
@@ -111,20 +109,13 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
     if (!word.trim()) return;
 
     setIsLoadingGuesses(true);
-    await submitClue({ word, count: clueCount }, modelId);
+    await submitClue({ clue: { word, count: clueCount }, modelId });
     setIsLoadingGuesses(false);
   };
 
   return (
-    <div className="flex max-w-4xl mx-auto p-4 space-x-4">
-      <TeamDisplay
-        team="red"
-        bgColor="bg-red-500/40"
-        textColor="text-red-500"
-        clues={clues.red}
-      />
-
-      <div className="flex-[5] space-y-4">
+    <div className="max-w-2xl mx-auto p-4">
+      <div className="space-y-2">
         <div className="flex justify-between items-center">
           {gameState.stage === 'playing' || isSelecting ? (
             <div className="font-semibold text-lg">
@@ -149,6 +140,41 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
               {gameState.winner} won
             </div>
           )}
+        </div>
+
+        <ClueHistory clues={clues} users={users} />
+
+        <form onSubmit={handleWordSubmit} className="flex gap-2">
+          <Input
+            type="text"
+            value={word}
+            onChange={(e) => setWord(e.target.value)}
+            placeholder="Enter a clue..."
+            disabled={gameState.stage !== 'playing'}
+            className="flex-1"
+          />
+
+          <Select
+            value={clueCount.toString()}
+            onValueChange={(value) => setClueCount(Number(value))}
+            disabled={gameState.stage !== 'playing'}
+          >
+            <SelectTrigger className="w-16 cursor-pointer">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
+                <SelectItem
+                  className="cursor-pointer"
+                  key={num}
+                  value={num.toString()}
+                >
+                  {num}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select
             value={modelId}
             onValueChange={(modelId) => setModelId(modelId as ModelId)}
@@ -169,65 +195,27 @@ function Game({ userState, gameState, submitClue, diffs }: GameProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <form onSubmit={handleWordSubmit} className="flex gap-2">
-          <Input
-            type="text"
-            value={word}
-            onChange={(e) => setWord(e.target.value)}
-            placeholder="Enter a clue..."
-            disabled={gameState.stage !== 'playing'}
-            className="flex-1"
-          />
-          <div className="flex gap-2">
-            <Select
-              value={clueCount.toString()}
-              onValueChange={(value) => setClueCount(Number(value))}
-              disabled={gameState.stage !== 'playing'}
-            >
-              <SelectTrigger className="w-16 cursor-pointer">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
-                  <SelectItem
-                    className="cursor-pointer"
-                    key={num}
-                    value={num.toString()}
-                  >
-                    {num}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              className="cursor-pointer"
-              disabled={
-                gameState.stage !== 'playing' ||
-                currentTeam !== userState.team ||
-                isSelecting ||
-                isLoadingGuesses
-              }
-              type="submit"
-            >
-              {isLoadingGuesses ? (
-                <LoaderCircleIcon className="animate-spin" />
-              ) : (
-                'Submit'
-              )}
-            </Button>
-          </div>
+
+          <Button
+            className="cursor-pointer"
+            disabled={
+              gameState.stage !== 'playing' ||
+              currentTeam !== userState.team ||
+              isSelecting ||
+              isLoadingGuesses
+            }
+            type="submit"
+          >
+            {isLoadingGuesses ? (
+              <LoaderCircleIcon className="animate-spin" />
+            ) : (
+              'Submit'
+            )}
+          </Button>
         </form>
 
         <Board board={gameState.board} clientBoard={clientBoard} />
       </div>
-
-      <TeamDisplay
-        team="blue"
-        bgColor="bg-blue-500/40"
-        textColor="text-blue-500"
-        clues={clues.blue}
-      />
     </div>
   );
 }

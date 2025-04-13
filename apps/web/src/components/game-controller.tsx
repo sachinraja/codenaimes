@@ -83,20 +83,16 @@ export function GameController({ roomId, sessionId }: GameControllerProps) {
             <Game
               userState={userState}
               gameState={gameState}
-              submitClue={async (clue, modelId) => {
+              submitClue={async (input) => {
                 try {
-                  await c?.call(
-                    c.builder.clue.mutationOptions({
-                      clue,
-                      modelId,
-                    }),
-                  );
+                  await c?.call(c.builder.giveClue.mutationOptions(input));
                 } catch (e) {
                   console.error(e);
                   toast.error('Error submitting clue. Please try again.');
                 }
               }}
               diffs={diffs}
+              users={users}
             />
           )}
         </>

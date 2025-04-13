@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Input } from './ui/input';
 import { createRoom } from '@/app/actions';
+import { PlayerAvatar } from './player-avatar';
 
 export function CreateRoomForm() {
   const [username, setUsername] = useState('');
@@ -28,12 +29,15 @@ export function CreateRoomForm() {
         className="flex flex-col space-y-2"
         onSubmit={handleCreateRoomSubmit}
       >
-        <Input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter a username..."
-        />
+        <div className="flex items-center space-x-2">
+          <PlayerAvatar username={username} size={36} />
+          <Input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter a username..."
+          />
+        </div>
         <Button
           type="submit"
           className="text-lg cursor-pointer"

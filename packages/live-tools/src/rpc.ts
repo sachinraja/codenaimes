@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { generateRandomBoard } from '@codenaimes/game/board';
 import { canGameStart } from '@codenaimes/game/utils';
 import { isWSAttachment } from './utils';
-import type { GameState } from '@codenaimes/game/types';
+import type { Clue, GameState } from '@codenaimes/game/types';
 import { generateGuesses } from './guess';
 import { z } from 'zod';
 import { type ModelId, models } from '@codenaimes/game/model';
@@ -66,10 +66,7 @@ export const rpcRouter = t.router({
       stage: 'playing',
       board: generateRandomBoard(),
       currentTeam: 'red',
-      clues: {
-        red: [],
-        blue: [],
-      },
+      clues: [],
     };
 
     await ctx.stateManager.put('gameState', startState);
@@ -101,7 +98,7 @@ export const rpcRouter = t.router({
     );
   }),
 
-  clue: protectedProcedure
+  giveClue: protectedProcedure
     .input(
       z.object({
         clue: z.object({
@@ -134,9 +131,16 @@ export const rpcRouter = t.router({
         });
       }
 
+      const clue: Clue = {
+        count: input.clue.count,
+        word: input.clue.word,
+        guesserId: ctx.user.id,
+        team: ctx.user.team,
+      };
+
       const { diffs, newGameState } = await generateGuesses(
         gameState,
-        input.clue,
+        clue,
         input.modelId,
       );
       await ctx.stateManager.put('gameState', newGameState);

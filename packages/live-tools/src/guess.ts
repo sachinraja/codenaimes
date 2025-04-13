@@ -74,10 +74,7 @@ export async function generateGuesses(
   const newBoard: Board = [...gameState.board];
   const otherTeam = getOtherTeam(gameState.currentTeam);
   let newGameState: GameState | null = null;
-  const newClues: PlayingGameState['clues'] = {
-    ...gameState.clues,
-    [gameState.currentTeam]: [...gameState.clues[gameState.currentTeam], clue],
-  };
+  const newClues: PlayingGameState['clues'] = [...gameState.clues, clue];
 
   for (let i = 0; i < words.length; i++) {
     const index = gameState.board.findIndex((w) => w.word === words[i].word);
